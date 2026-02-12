@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'images/hero-solar.jpg' %}" alt="Solar Farm" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 md:px-6 relative z-10 py-20">
+        <div class="max-w-3xl mx-auto text-center animate-fade-in-up">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium mb-6">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                Leading Green Energy Revolution
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight tracking-tight">
+                Empowering the Future with <span class="text-green-500">Green Energy</span>
+            </h1>
+            
+            <p class="text-lg md:text-xl text-slate-200 mb-8 leading-relaxed max-w-2xl mx-auto">
+                Comprehensive solutions for solar power plants and sustainable infrastructure development.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#projects" class="w-full sm:w-auto px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 shadow-lg shadow-green-900/20">
+                    Our Projects
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </a>
+                <a href="#about" class="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border border-white/10 rounded-lg font-semibold transition-all flex items-center justify-center gap-2">
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute bottom-0 left-0 right-0 bg-white/5 backdrop-blur-md border-t border-white/10 hidden md:block">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-4 divide-x divide-white/10">
+                <div class="py-6 px-4 text-center">
+                    <p class="text-2xl font-bold text-white mb-1">500MW+</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Total Capacity</p>
+                </div>
+                <div class="py-6 px-4 text-center">
+                    <p class="text-2xl font-bold text-white mb-1">50+</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Projects Completed</p>
+                </div>
+                <div class="py-6 px-4 text-center">
+                    <p class="text-2xl font-bold text-white mb-1">100%</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Client Satisfaction</p>
+                </div>
+                <div class="py-6 px-4 text-center">
+                    <p class="text-2xl font-bold text-white mb-1">24/7</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Support & Maintenance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="about" class="py-20 bg-white">
+    <div class="container mx-auto px-4 md:px-6">
+        <div class="text-center max-w-2xl mx-auto mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Pioneering Sustainable Solutions</h2>
+            <p class="text-slate-600">We combine technical expertise with innovative thinking to deliver world-class energy infrastructure projects.</p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-all group">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="sun" class="w-6 h-6 text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Solar Energy</h3>
+                <p class="text-slate-600 leading-relaxed mb-4">Expertise in large-scale solar power plant development, from initial feasibility studies to final commissioning.</p>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-all group">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="leaf" class="w-6 h-6 text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Green Solutions</h3>
+                <p class="text-slate-600 leading-relaxed mb-4">Implementing environmentally friendly technologies that minimize carbon footprint and maximize efficiency.</p>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-all group">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i data-lucide="zap" class="w-6 h-6 text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Grid Integration</h3>
+                <p class="text-slate-600 leading-relaxed mb-4">Seamless integration of renewable energy sources into existing power grid infrastructure.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="services" class="py-20 bg-slate-50">
+    <div class="container mx-auto px-4 md:px-6">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div class="max-w-2xl">
+                <span class="text-green-600 font-semibold tracking-wider text-sm uppercase mb-2 block">Our Expertise</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Comprehensive Engineering Services</h2>
+            </div>
+            <a href="#" class="group flex items-center gap-2 text-slate-900 font-semibold hover:text-green-600 transition-colors">
+                View All Services
+                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+            </a>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100">
+                <i data-lucide="clipboard-check" class="w-10 h-10 text-green-600 mb-6"></i>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Owner's Engineer Service</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">Technical supervision and project management representing the client's interests throughout the project lifecycle.</p>
+            </div>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100">
+                <i data-lucide="shield" class="w-10 h-10 text-green-600 mb-6"></i>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Technical Audit</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">Detailed assessment of existing infrastructure performance and safety compliance.</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-slate-100">
+                <i data-lucide="settings" class="w-10 h-10 text-green-600 mb-6"></i>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Commissioning</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">Systematic process of ensuring that all systems perform interactively according to the design intent.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

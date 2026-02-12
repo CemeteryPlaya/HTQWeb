@@ -1,0 +1,345 @@
+{
+    "profile": {
+        "title": "My Profile",
+        "edit": "Edit Profile",
+        "save": "Save Changes",
+        "cancel": "Cancel",
+        "displayName": "Display Name",
+        "bio": "Bio",
+        "email": "Email",
+        "roles": "Roles",
+        "settings": "Settings",
+        "language": "Language",
+        "timezone": "Timezone",
+        "updated": "Profile updated successfully",
+        "saving": "Saving...",
+        "changeAvatar": "Change Avatar",
+        "errors": {
+            "nameMin": "Name must be at least 2 characters"
+        }
+    },
+    "header": {
+        "about": "About Us",
+        "projects": "Projects",
+        "services": "Services",
+        "news": "News",
+        "contacts": "Contacts",
+        "mission": "Mission",
+        "partners": "Partners",
+        "login": "Login",
+        "logout": "Logout",
+        "tagline": "Construction services in energy sector"
+    },
+    "hero": {
+        "tag": "Market Leader in Central Asia",
+        "title_start": "Reliable Solutions",
+        "title_end": "for a Better Future",
+        "description": "Market leader in Central Asia in the construction of renewable energy projects",
+        "contact_us": "Contact Us",
+        "our_projects": "Our Projects",
+        "learn_more": "Learn More",
+        "stats": {
+            "power_value": "160 MW",
+            "power_desc": "HTQ participated in solar power plant construction projects with a total capacity of 160 MW",
+            "cycle_desc": "90 MW Solar Power Plants built in Kazakhstan on a full cycle basis",
+            "method_desc": "Developed an effective methodology for successful project execution",
+            "full_cycle": "Full Cycle",
+            "own_method": "Own Methodology"
+        }
+    },
+    "directions": {
+        "tag": "Directions",
+        "title": "Activity Directions",
+        "more": "Learn more",
+        "items": {
+            "earthworks": {
+                "title": "Earthworks",
+                "desc": "Site preparation and earthworks for solar power plants"
+            },
+            "construction": {
+                "title": "General Construction",
+                "desc": "Construction of infrastructure and buildings for energy facilities"
+            },
+            "installation": {
+                "title": "Installation and Assembly",
+                "desc": "Installation of solar panels and related equipment"
+            },
+            "sunpark": {
+                "title": "Electrical Works: Solar Park",
+                "desc": "Electrical installation works on DC and AC sides"
+            },
+            "substation": {
+                "title": "Electrical Works: SS and OHL",
+                "desc": "Construction of substations and overhead power lines"
+            }
+        }
+    },
+    "projects": {
+        "tag": "Portfolio",
+        "title": "Projects",
+        "desc": "In everything we do, our goal is to minimize the risk for our customers, maximize project efficiency and profitability, and guarantee their long-term success.",
+        "featured": "Featured Project",
+        "status": {
+            "operational": "Operational",
+            "development": "In Development"
+        },
+        "view_all": "View All Projects"
+    },
+    "projects_page": {
+        "title": "All Projects",
+        "subtitle": "Explore our complete portfolio of solar power plants across Central Asia"
+    },
+    "services": {
+        "tag": "What we do",
+        "title": "Our Role",
+        "desc": "Hi-Tech Group is a seasoned team with a decade of expertise in executing renewable energy projects across Central Asia.",
+        "learn_more": "Learn more",
+        "view_all": "View All Services",
+        "step": "Service {{current}} of {{total}}",
+        "items": {
+            "owners_engineer": {
+                "title": "Owner's Engineer Service",
+                "desc": "We facilitate communication among clients, EPC contractors, subcontractors, banks, governmental bodies, and consultancies. We monitor construction activities on-site to ensure quality, compliance with local laws, and adherence to safety and environmental standards."
+            },
+            "pot": {
+                "title": "Pull Out Test (POT)",
+                "desc": "We offer Pull Out Test services customized for solar PV plants. Pile foundations are designed to withstand a variety of loads such as axial, lateral, moment, uplift, and combinations thereof."
+            },
+            "construction": {
+                "title": "Construction Service",
+                "desc": "Our services include landscaping, earthworks, road construction, civil structures, assembly and installation operations, and electrical works, including AC installations."
+            },
+            "commissioning": {
+                "title": "Commissioning and Grid Connection",
+                "desc": "We guide and oversee the grid connection process, including preparing testing programs for ASKUE, coordinating approvals for pilot industrial tests with grid operators."
+            },
+            "maintenance": {
+                "title": "Operation and Maintenance",
+                "desc": "We evaluate the operational performance of PV plant components, maintain them according to manufacturers' guidelines, conduct hardware tests to ensure reliability."
+            }
+        }
+    },
+    "services_page": {
+        "title": "All Services",
+        "subtitle": "Comprehensive services for renewable energy projects",
+        "learn_more": "Learn More"
+    },
+    "contacts_page": {
+        "tag": "Contacts",
+        "title": "Contacts",
+        "subtitle": "Lorem ipsum dolor sit amet — find our office addresses and contact information below.",
+        "our_offices": "Our Offices",
+        "affiliated_company": "Affiliated Company",
+        "contacts": "Contact Persons",
+        "map_placeholder": "Map"
+    },
+    "contacts_data": {
+        "offices": {
+            "main": {
+                "name": "Main Office",
+                "address": "Kazakhstan, Taraz, Akbulak microdistrict, Tarazova st., 9A"
+            },
+            "office2": {
+                "name": "Fish: Office Name 2",
+                "address": "Fish: City, Street, Building 10A"
+            },
+            "office3": {
+                "name": "Fish: Office Name 3",
+                "address": "Fish: City, Street, Building 22B"
+            },
+            "affiliated": {
+                "name": "Fish: Affiliated Company Office",
+                "address": "Fish: City, Street, Building 00V"
+            }
+        },
+        "positions": {
+            "position1": "Fish: Position 1",
+            "position2": "Fish: Position 2",
+            "position3": "Fish: Position 3",
+            "position4": "Fish: Position 4",
+            "position5": "Fish: Position 5",
+            "position6": "Fish: Position 6",
+            "position7": "Fish: Position 7",
+            "position8": "Fish: Position 8",
+            "position9": "Fish: Position 9"
+        },
+        "affiliated": {
+            "name": "Fish: Affiliated Company Name",
+            "description": "Fish: Brief description of the affiliated company and its connection to Hi-Tech Group.",
+            "details": "Fish: Lorem ipsum dolor sit amet, consectetur adipiscing elit. The company was founded in year fish and successfully implements projects in the field of renewable energy. We provide high quality services based on years of experience in the industry.",
+            "tag1": "Fish: Specialization 1",
+            "tag2": "Fish: Specialization 2"
+        }
+    },
+    "projects_data": {
+        "1": {
+            "name": "SAMARKAND SPP",
+            "location": "Uzbekistan",
+            "description": "Construction of the largest solar power plant in the Samarkand region. The project utilizes state-of-the-art PV technology and makes a significant contribution to Uzbekistan's renewable energy capacity.",
+            "customer": "Government of Uzbekistan",
+            "tasks": "General Construction, Electrical Works, Commissioning"
+        },
+        "2": {
+            "name": "Gulshat SPP",
+            "location": "Kazakhstan",
+            "description": "A key solar power plant in southern Kazakhstan. The facility plays an important role in meeting regional energy demands and supports the country's renewable energy targets.",
+            "customer": "Private Energy Investor",
+            "tasks": "EPC Contracting, Site Preparation, Solar Panel Installation"
+        },
+        "3": {
+            "name": "SHAULDER SPP",
+            "location": "Kazakhstan",
+            "description": "Located in the Aral region with optimal solar radiation conditions. The plant demonstrates Hi-Tech Group's capability to develop projects in challenging geographical locations.",
+            "customer": "Regional Power Grid",
+            "tasks": "Engineering Design, Grid Connection, Maintenance"
+        },
+        "4": {
+            "name": "Navoi SPP",
+            "location": "Uzbekistan",
+            "description": "A major solar power plant contributing to Uzbekistan's green energy transition. The project features advanced energy storage integration for improved grid stability.",
+            "customer": "State Energy Company",
+            "tasks": "Project Management, Substation Construction, POT Testing"
+        },
+        "5": {
+            "name": "Burnoye SPP",
+            "location": "Kazakhstan",
+            "description": "Utilizes advanced photovoltaic technology for maximum energy output. The plant is equipped with modern monitoring systems and automated maintenance protocols.",
+            "customer": "International Consortium",
+            "tasks": "Full Cycle Construction, Automated Monitoring Setup"
+        },
+        "6": {
+            "name": "Zadarya SPP",
+            "location": "Uzbekistan",
+            "description": "A pilot project demonstrating Hi-Tech Group's full-cycle capabilities from design to commissioning. Serves as a reference site for future larger-scale developments.",
+            "customer": "Local Municipality",
+            "tasks": "Feasibility Study, Pilot Implementation, Training"
+        },
+        "7": {
+            "name": "Kuyonova SPP",
+            "location": "Uzbekistan",
+            "description": "A compact solar power plant with design optimized for local terrain conditions. The project showcases cost-effective solutions for small-scale renewable energy generation.",
+            "customer": "Agricultural Cooperative",
+            "tasks": "Terrain Analysis, Compact Installation, Grid Integration"
+        },
+        "8": {
+            "name": "Chulakkurgan SPP",
+            "location": "Kazakhstan",
+            "description": "A strategic project for regional energy security in western Kazakhstan. The plant integrates seamlessly with the existing power grid and enhances local energy resilience.",
+            "customer": "Kazakhstan Grid Operator",
+            "tasks": "High Voltage Line Construction, Substation Upgrade"
+        },
+        "9": {
+            "name": "Tashkent SPP",
+            "location": "Uzbekistan",
+            "description": "Currently in the development phase with advanced engineering design underway. This will be one of the largest solar power plants in Uzbekistan upon completion.",
+            "customer": "National Energy Ministry",
+            "tasks": "Advanced Engineering, Environmental Assessment, Land Surveying"
+        },
+        "10": {
+            "name": "Zhezkazgan SPP",
+            "location": "Kazakhstan",
+            "description": "A small-scale demonstration project in central Kazakhstan showcasing innovative solar solutions. The facility serves as a testing ground for new photovoltaic technologies.",
+            "customer": "Research Institute",
+            "tasks": "Experimental Install, Data Collection, Performance Analysis"
+        }
+    },
+    "about": {
+        "tag": "About Us",
+        "title": "We offer energy consulting services",
+        "p1": "Here, in the Hi-Tech Group of companies, we sincerely believe that new technologies and solutions, new green projects will help preserve and enhance the world in which we live.",
+        "p2": "We have the necessary knowledge and experience that will allow us to offer our customers comprehensive solutions for the development, implementation and project management in the renewable energy industry.",
+        "learn_more": "Learn more about us",
+        "eco_friendly": "Eco-Friendly",
+        "eco_desc": "Committed to reducing carbon footprint through renewable energy solutions",
+        "features": {
+            "solar": {
+                "title": "Solar Energy",
+                "desc": "Expertise in large-scale solar power plant development"
+            },
+            "green": {
+                "title": "Green Solutions",
+                "desc": "Sustainable practices for a cleaner future"
+            },
+            "efficiency": {
+                "title": "Energy Efficiency",
+                "desc": "Maximizing output while minimizing environmental impact"
+            }
+        }
+    },
+    "stats": {
+        "tag": "Our Impact",
+        "title": "Solutions in Renewable Energy",
+        "items": {
+            "years": "Years of Experience",
+            "projects": "Completed Projects",
+            "megawatts": "Megawatts Installed"
+        }
+    },
+    "invest": {
+        "tag": "Green Investment",
+        "title_start": "Invest in",
+        "title_accent": "green technologies",
+        "desc": "to preserve and enhance the world in which we live",
+        "cta": "Get in touch"
+    },
+    "partners": {
+        "tag": "Partners",
+        "title": "Trusted by Industry Experts"
+    },
+    "news": {
+        "tag": "Latest Updates",
+        "title": "News",
+        "view_all": "View all News",
+        "read_more": "Read more"
+    },
+    "contact": {
+        "tag": "Get in Touch",
+        "title": "Contact Us",
+        "desc": "We'd love to talk to you about your goals and how we can get you there. Let's start a conversation about renewable energy solutions.",
+        "info": {
+            "address": "Address",
+            "email": "Email",
+            "phone": "Phone",
+            "location": "Kazakhstan, Taraz, Akbulak microdistrict, 9A"
+        },
+        "form": {
+            "title": "Send us a message",
+            "first_name": "First Name",
+            "last_name": "Last Name",
+            "email": "Email",
+            "message": "Message",
+            "placeholder": "Tell us about your project...",
+            "send": "Send Message"
+        }
+    },
+    "mission": {
+        "tag": "Our Mission",
+        "title": "Comprehensive RE Solutions",
+        "desc": "The company's mission is to provide comprehensive renewable energy solutions to achieve sustainable development for our clients.",
+        "learn_more": "Learn More",
+        "stats": "built on a full cycle basis in Kazakhstan",
+        "items": {
+            "solutions": {
+                "title": "Comprehensive Solutions",
+                "desc": "Full cycle of services from development to operation of RE projects"
+            },
+            "reliability": {
+                "title": "Reliability",
+                "desc": "Quality assurance and compliance with international standards"
+            },
+            "innovation": {
+                "title": "Innovation",
+                "desc": "Application of advanced technologies and methodologies"
+            }
+        }
+    },
+    "footer": {
+        "tagline": "Market leader in renewable energy sources in Central Asia. Building a sustainable future through innovative solar solutions.",
+        "company": "Company",
+        "services": "Services",
+        "contact": "Contact",
+        "rights": "All rights reserved.",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+    }
+}

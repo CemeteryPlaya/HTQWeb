@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core brand colors - green energy theme */
+    --background: 0 0% 100%;
+    --foreground: 210 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 12%;
+
+    /* Primary - Deep forest green */
+    --primary: 145 45% 22%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Warm gold */
+    --secondary: 42 85% 55%;
+    --secondary-foreground: 210 20% 12%;
+
+    /* Accent - Light sage */
+    --accent: 145 30% 94%;
+    --accent-foreground: 145 45% 22%;
+
+    --muted: 210 15% 96%;
+    --muted-foreground: 210 10% 45%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 15% 90%;
+    --input: 210 15% 90%;
+    --ring: 145 45% 22%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --gradient-hero: linear-gradient(135deg, hsl(145 45% 22%) 0%, hsl(160 40% 28%) 50%, hsl(42 85% 45%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(42 85% 55%) 0%, hsl(38 90% 45%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(210 20% 8%) 0%, hsl(210 25% 12%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(145 20% 98%) 100%);
+    
+    --shadow-soft: 0 4px 20px -4px hsl(145 45% 22% / 0.1);
+    --shadow-card: 0 8px 30px -8px hsl(210 20% 12% / 0.12);
+    --shadow-elevated: 0 20px 50px -12px hsl(210 20% 12% / 0.2);
+    --shadow-gold: 0 8px 30px -8px hsl(42 85% 55% / 0.4);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Soft dark theme (emerald-tinted, not too dark) */
+    --background: 210 16% 13%;
+    --foreground: 210 20% 90%;
+
+    --card: 210 18% 16%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 210 18% 16%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 145 45% 45%;
+    --primary-foreground: 210 20% 8%;
+
+    --secondary: 42 85% 55%;
+    --secondary-foreground: 210 20% 10%;
+
+    --accent: 145 28% 22%;
+    --accent-foreground: 210 20% 94%;
+
+    --muted: 210 18% 20%;
+    --muted-foreground: 210 12% 70%;
+
+    --destructive: 0 62.8% 34%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 18% 24%;
+    --input: 210 18% 24%;
+    --ring: 145 45% 45%;
+
+    --shadow-soft: 0 6px 26px -8px hsl(210 20% 8% / 0.4);
+    --shadow-card: 0 10px 30px -10px hsl(210 20% 8% / 0.45);
+    --shadow-elevated: 0 22px 54px -14px hsl(210 20% 8% / 0.5);
+
+    --sidebar-background: 210 16% 15%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 145 45% 45%;
+    --sidebar-primary-foreground: 210 20% 8%;
+    --sidebar-accent: 210 15% 20%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 210 15% 24%;
+    --sidebar-ring: 145 45% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-hero);
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-gold);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:shadow-gold hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:bg-primary hover:text-primary-foreground;
+  }
+
+  .card-hover {
+    @apply transition-all duration-500 ease-out;
+    @apply hover:shadow-elevated hover:-translate-y-2;
+  }
+
+  .section-padding {
+    @apply py-20 md:py-28 lg:py-32;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Smooth page transition when switching language */
+  .language-transition {
+    transition: opacity 320ms ease, filter 320ms ease, transform 320ms ease;
+    will-change: opacity, filter, transform, box-shadow;
+  }
+
+  .language-changing {
+    opacity: 0.94;
+    filter: blur(1.5px);
+    /* removed transform: scale(...) so fixed-position elements (header) remain fixed to viewport */
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.45), 0 0 60px hsl(var(--primary) / 0.25);
+  }
+
+  /* Animated underline */
+  .link-underline {
+    @apply relative;
+  }
+
+  .link-underline::after {
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-secondary transition-all duration-300;
+    content: '';
+  }
+
+  .link-underline:hover::after {
+    @apply w-full;
+  }
+
+  /* Stats counter animation */
+  .stat-number {
+    @apply text-5xl md:text-6xl lg:text-7xl font-bold;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  /* Floating animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Fade in up animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  /* Pulse glow (uses theme primary color) */
+  @keyframes pulseGlow {
+    /* Use the --primary H S% L% token (e.g. "145 45% 22%") and apply alpha for glow */
+    0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.28); }
+    50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.48); }
+  }
+
+  .animate-pulse-glow {
+    /* apply the animation and make sure it doesn't affect layout */
+    animation: pulseGlow 2s ease-in-out infinite;
+    /* ensure the glow is visible beyond the element's bounds */
+    will-change: box-shadow;
+  }
+
+  /* Scroll indicator */
+  @keyframes scrollBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  .animate-scroll-bounce {
+    animation: scrollBounce 1.5s ease-in-out infinite;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/50;
+}
