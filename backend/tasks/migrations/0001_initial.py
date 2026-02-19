@@ -1,0 +1,122 @@
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    """
+    State-only migration: register task models under the 'tasks' app
+    without touching the database (tables already exist as hr_*).
+    """
+
+    initial = True
+
+    dependencies = [
+        ('hr', '0012_tasks_roadmap_labels'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='Label',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('name', models.CharField(max_length=100, unique=True, verbose_name='Название')),
+                        ('color', models.CharField(default='#6366f1', help_text='Цвет метки в формате #RRGGBB', max_length=7, verbose_name='Цвет (hex)')),
+                    ],
+                    options={
+                        'verbose_name': 'Метка',
+                        'verbose_name_plural': 'Метки',
+                        'ordering': ['name'],
+                        'db_table': 'hr_label',
+                    },
+                ),
+                migrations.CreateModel(
+                    name='ProjectVersion',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('name', models.CharField(max_length=200, verbose_name='Название')),
+                        ('description', models.TextField(blank=True, default='', verbose_name='Описание')),
+                        ('status', models.CharField(choices=[('planned', 'Запланирована'), ('in_progress', 'В работе'), ('released', 'Выпущена'), ('archived', 'В архиве')], default='planned', max_length=20, verbose_name='Статус')),
+                        ('start_date', models.DateField(blank=True, null=True, verbose_name='Дата начала')),
+                        ('release_date', models.DateField(blank=True, null=True, verbose_name='Дата релиза')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                    ],
+                    options={
+                        'verbose_name': 'Версия (релиз)',
+                        'verbose_name_plural': 'Версии (релизы)',
+                        'ordering': ['-release_date', '-created_at'],
+                        'db_table': 'hr_projectversion',
+                    },
+                ),
+                migrations.CreateModel(
+                    name='Task',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('is_deleted', models.BooleanField(db_index=True, default=False, verbose_name='Удалён')),
+                        ('key', models.CharField(blank=True, help_text='Автогенерируемый ключ вида TASK-123', max_length=20, unique=True, verbose_name='Ключ')),
+                        ('summary', models.CharField(max_length=500, verbose_name='Заголовок')),
+                        ('description', models.TextField(blank=True, default='', verbose_name='Описание')),
+                        ('task_type', models.CharField(choices=[('task', 'Задача'), ('bug', 'Баг'), ('story', 'История'), ('epic', 'Эпик'), ('subtask', 'Подзадача')], default='task', max_length=20, verbose_name='Тип')),
+                        ('priority', models.CharField(choices=[('critical', 'Критический'), ('high', 'Высокий'), ('medium', 'Средний'), ('low', 'Низкий'), ('trivial', 'Тривиальный')], default='medium', max_length=20, verbose_name='Приоритет')),
+                        ('status', models.CharField(choices=[('open', 'Открыта'), ('in_progress', 'В работе'), ('in_review', 'На ревью'), ('done', 'Готова'), ('closed', 'Закрыта')], default='open', max_length=20, verbose_name='Статус')),
+                        ('due_date', models.DateField(blank=True, null=True, verbose_name='Срок')),
+                        ('start_date', models.DateField(blank=True, null=True, verbose_name='Дата начала')),
+                        ('completed_at', models.DateTimeField(blank=True, null=True, verbose_name='Завершена')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('assignee', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_tasks', to=settings.AUTH_USER_MODEL, verbose_name='Исполнитель')),
+                        ('department', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tasks', to='hr.department', verbose_name='Отдел')),
+                        ('labels', models.ManyToManyField(blank=True, related_name='tasks', to='tasks.label', verbose_name='Метки')),
+                        ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='subtasks', to='tasks.task', verbose_name='Родительская задача')),
+                        ('reporter', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='reported_tasks', to=settings.AUTH_USER_MODEL, verbose_name='Автор')),
+                        ('version', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tasks', to='tasks.projectversion', verbose_name='Версия / релиз')),
+                    ],
+                    options={
+                        'verbose_name': 'Задача',
+                        'verbose_name_plural': 'Задачи',
+                        'ordering': ['-created_at'],
+                        'db_table': 'hr_task',
+                    },
+                ),
+                migrations.CreateModel(
+                    name='TaskAttachment',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('file', models.FileField(upload_to='hr/task_attachments/%Y/%m/', verbose_name='Файл')),
+                        ('filename', models.CharField(blank=True, max_length=255, verbose_name='Имя файла')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attachments', to='tasks.task', verbose_name='Задача')),
+                        ('uploaded_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='task_attachments', to=settings.AUTH_USER_MODEL, verbose_name='Загрузил')),
+                    ],
+                    options={
+                        'verbose_name': 'Вложение задачи',
+                        'verbose_name_plural': 'Вложения задач',
+                        'ordering': ['-created_at'],
+                        'db_table': 'hr_taskattachment',
+                    },
+                ),
+                migrations.CreateModel(
+                    name='TaskComment',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('body', models.TextField(verbose_name='Текст')),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('author', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='task_comments', to=settings.AUTH_USER_MODEL, verbose_name='Автор')),
+                        ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='tasks.task', verbose_name='Задача')),
+                    ],
+                    options={
+                        'verbose_name': 'Комментарий задачи',
+                        'verbose_name_plural': 'Комментарии задач',
+                        'ordering': ['created_at'],
+                        'db_table': 'hr_taskcomment',
+                    },
+                ),
+            ],
+            database_operations=[],
+        ),
+    ]

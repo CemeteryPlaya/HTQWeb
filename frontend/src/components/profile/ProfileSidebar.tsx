@@ -5,8 +5,12 @@ import api from '@/api/client';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 
+import { UserProfile } from '../../types/userProfile';
+
 type Props = {
     roles?: string[];
+    department?: string;
+    position?: string;
 };
 
 const isEditor = (roles?: string[]) => {
@@ -16,7 +20,14 @@ const isEditor = (roles?: string[]) => {
 
 const isHRManager = (roles?: string[]) => {
     if (!roles) return false;
-    return roles.includes('hr_manager') || roles.includes('staff');
+    return (
+        roles.includes('hr_manager')
+        || roles.includes('senior_hr')
+        || roles.includes('junior_hr')
+        || roles.includes('senior_manager')
+        || roles.includes('junior_manager')
+        || roles.includes('staff')
+    );
 }
 
 const isAdmin = (roles?: string[]) => {
@@ -24,11 +35,12 @@ const isAdmin = (roles?: string[]) => {
     return roles.includes('staff');
 }
 
-export const ProfileSidebar: React.FC<Props> = ({ roles }) => {
+export const ProfileSidebar: React.FC<Props> = ({ roles, department, position }) => {
     const { t } = useTranslation();
     const editor = isEditor(roles);
     const hrManager = isHRManager(roles);
     const admin = isAdmin(roles);
+    const hasTasksAccess = hrManager || (department && position);
 
     return (
         <aside className="bg-card rounded-lg border p-4">
@@ -89,6 +101,23 @@ export const ProfileSidebar: React.FC<Props> = ({ roles }) => {
                         </li>
                         <li>
                             <Link to="/hr/history" className="text-primary hover:underline">{t('profile.sidebar.history')}</Link>
+                        </li>
+                    </ul>
+                </div>
+            )}
+
+            {hasTasksAccess && (
+                <div className="mt-6">
+                    <h4 className="font-semibold mb-3">{t('profile.sidebar.tasks')}</h4>
+                    <ul className="space-y-2 text-sm">
+                        <li>
+                            <Link to="/tasks" className="text-primary hover:underline">{t('profile.sidebar.tasksList')}</Link>
+                        </li>
+                        <li>
+                            <Link to="/tasks/roadmap" className="text-primary hover:underline">{t('profile.sidebar.roadmap')}</Link>
+                        </li>
+                        <li>
+                            <Link to="/tasks/reports" className="text-primary hover:underline">{t('profile.sidebar.reports')}</Link>
                         </li>
                     </ul>
                 </div>

@@ -366,6 +366,10 @@
             "documents": "Документы",
             "profiles": "Профили пользователей",
             "history": "Кадровая история",
+            "tasks": "Задачи",
+            "tasksList": "Задачи",
+            "roadmap": "Дорожная карта",
+            "reports": "Отчёты",
             "actionLogs": "Журнал действий",
             "registrations": "Регистрации"
         },
@@ -436,8 +440,11 @@
             "timeTracking": "Учет времени",
             "vacancies": "Вакансии",
             "applications": "Заявки",
+            "offers": "Оффер",
+            "archive": "Архив",
             "documents": "Документы",
             "history": "Кадровая история",
+            "accounts": "Аккаунты",
             "profiles": "Профили",
             "logs": "Журнал действий"
         },
@@ -461,6 +468,16 @@
             "noDepartment": "Без отдела",
             "noPosition": "Без должности"
         },
+        "tasks": {
+            "title": "Задачи",
+            "navigation": "Навигация",
+            "backToMain": "Назад в профиль",
+            "nav": {
+                "tasks": "Задачи",
+                "roadmap": "Дорожная карта",
+                "reports": "Отчёты"
+            }
+        },
         "pages": {
             "employees": {
                 "title": "Сотрудники",
@@ -478,7 +495,19 @@
                     "phone": "Телефон",
                     "dateHired": "Дата приема",
                     "dateDismissed": "Дата увольнения",
-                    "notes": "Заметки"
+                    "notes": "Заметки",
+                    "salary": "Зарплата",
+                    "bonus": "Премия",
+                    "passportData": "Паспортные данные",
+                    "bankAccount": "Банковский счёт",
+                    "sroPermitNumber": "Номер допуска СРО",
+                    "sroPermitExpiry": "Срок действия допуска СРО",
+                    "safetyCertNumber": "Номер сертификата ОТ",
+                    "safetyCertExpiry": "Срок действия сертификата ОТ"
+                },
+                "sections": {
+                    "sro": "СРО и Охрана труда",
+                    "financial": "Финансовые данные (конфиденциально)"
                 },
                 "placeholders": {
                     "selectUser": "Выберите пользователя",
@@ -667,6 +696,94 @@
                     "status": "Статус",
                     "applied": "Дата",
                     "actions": "Действия"
+                },
+                "step": {
+                    "prev": "Шаг назад",
+                    "next": "Следующий шаг"
+                }
+            },
+            "offers": {
+                "title": "Оффер",
+                "subtitle": "Принятие или отклонение кандидатов по офферу.",
+                "error": "Ошибка загрузки офферов",
+                "empty": "Нет кандидатов с оффером",
+                "status": {
+                    "offered": "Оффер",
+                    "hired": "Принят",
+                    "rejected": "Отклонен"
+                },
+                "actions": {
+                    "accept": "Принять",
+                    "reject": "Отклонить",
+                    "return": "Вернуть в оффер"
+                },
+                "seniorOnly": "Только Senior HR может утвердить приём",
+                "table": {
+                    "candidate": "Кандидат",
+                    "email": "Email",
+                    "vacancy": "Вакансия",
+                    "status": "Статус",
+                    "date": "Дата",
+                    "actions": "Действия"
+                }
+            },
+            "archive": {
+                "title": "Архив",
+                "subtitle": "Принятые/отклонённые заявки и связанные документы.",
+                "error": "Ошибка загрузки архива",
+                "emptyApplications": "Архивных заявок пока нет",
+                "emptyDocuments": "Архивных документов пока нет",
+                "filters": {
+                    "all": "Все",
+                    "noStatus": "Без статуса",
+                    "dateFrom": "Дата от",
+                    "dateTo": "Дата до",
+                    "clear": "Сбросить"
+                },
+                "status": {
+                    "hired": "Принят",
+                    "rejected": "Отклонен"
+                },
+                "counters": {
+                    "applications": "Заявки",
+                    "documents": "Документы"
+                },
+                "sections": {
+                    "applications": "Архив заявок",
+                    "documents": "Архив документов"
+                },
+                "applications": {
+                    "candidate": "Кандидат",
+                    "email": "Email",
+                    "vacancy": "Вакансия",
+                    "status": "Статус",
+                    "updated": "Обновлено"
+                },
+                "documents": {
+                    "employee": "Сотрудник",
+                    "candidate": "Кандидат",
+                    "title": "Документ",
+                    "type": "Тип",
+                    "status": "Статус заявки",
+                    "date": "Дата",
+                    "file": "Файл"
+                },
+                "editDialog": {
+                    "title": "Редактировать документ",
+                    "replaceFile": "Заменить файл",
+                    "regenerateHint": "Редактирование содержимого PDF",
+                    "regenerate": "Перегенерировать PDF",
+                    "fields": {
+                        "candidateName": "ФИО",
+                        "candidateEmail": "Email",
+                        "vacancyTitle": "Должность",
+                        "departmentName": "Отдел",
+                        "hireDate": "Дата приёма",
+                        "workConditions": "Условия приёма",
+                        "workType": "Характер работы",
+                        "probationPeriod": "Испытательный срок",
+                        "workSchedule": "Режим работы"
+                    }
                 }
             },
             "documents": {
@@ -700,6 +817,10 @@
                     "document": "Документ",
                     "type": "Тип",
                     "uploadedBy": "Загрузил",
+                    "tasks": "Задачи",
+                    "tasksList": "Задачи",
+                    "roadmap": "Дорожная карта",
+                    "reports": "Отчёты",
                     "date": "Дата",
                     "actions": "Действия"
                 }
@@ -775,6 +896,30 @@
                     "details": "Подробности",
                     "orderNumber": "№ приказа",
                     "actions": "Действия"
+                }
+            },
+            "accounts": {
+                "title": "Аккаунты сотрудников",
+                "subtitle": "Учётные записи, автоматически созданные при приёме кандидатов.",
+                "error": "Ошибка загрузки аккаунтов",
+                "searchPlaceholder": "Поиск по имени, email или логину...",
+                "editTitle": "Редактировать аккаунт",
+                "resetPassword": "Сбросить",
+                "copy": "Копировать",
+                "copied": "Скопировано!",
+                "active": "Активен",
+                "inactive": "Отключён",
+                "empty": "Нет аккаунтов. Аккаунты создаются автоматически при приёме кандидатов.",
+                "passwordHint": "При сохранении пароль будет обновлён и в учётной записи пользователя.",
+                "fields": {
+                    "employee": "Сотрудник",
+                    "email": "Email",
+                    "department": "Отдел",
+                    "position": "Должность",
+                    "username": "Логин",
+                    "password": "Пароль",
+                    "status": "Статус",
+                    "isActive": "Аккаунт активен"
                 }
             }
         }

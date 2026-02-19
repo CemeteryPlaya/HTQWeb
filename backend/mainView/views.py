@@ -7,6 +7,7 @@ from .models import Item
 from .serializers import ItemSerializer
 from media_manager.models import News
 from .serializers import NewsSerializer
+from hr.roles import has_hr_group
 
 # Create your views here.
 def index(request):
@@ -84,7 +85,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_staff or user.is_superuser:
             return True
-        return user.groups.filter(name='HR_Manager').exists()
+        return has_hr_group(user)
 
     def get_queryset(self):
         if self._is_hr_or_staff():

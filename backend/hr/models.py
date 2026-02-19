@@ -1,8 +1,77 @@
+import secrets
+import string
+
 from django.conf import settings
 from django.db import models
 
 
-class Department(models.Model):
+# ---------------------------------------------------------------------------
+#  Soft-delete infrastructure
+# ---------------------------------------------------------------------------
+
+
+class SoftDeleteQuerySet(models.QuerySet):
+    """QuerySet, который по умолчанию скрывает «удалённые» записи."""
+
+    def delete(self):
+        """Мягкое удаление всего queryset."""
+        return self.update(is_deleted=True)
+
+    def hard_delete(self):
+        return super().delete()
+
+    def alive(self):
+        return self.filter(is_deleted=False)
+
+    def dead(self):
+        return self.filter(is_deleted=True)
+
+
+class SoftDeleteManager(models.Manager):
+    """Менеджер, возвращающий только «живые» записи."""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db).alive()
+
+
+class SoftDeleteAllManager(models.Manager):
+    """Менеджер, который включает удалённые записи (для администрирования)."""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db)
+
+
+class SoftDeleteMixin(models.Model):
+    """
+    Абстрактный миксин для мягкого удаления.
+    Вместо физического удаления выставляется флаг ``is_deleted = True``.
+    Менеджер ``objects`` по умолчанию скрывает такие записи.
+    ``all_objects`` — менеджер, показывающий всё (для Senior HR / Admin).
+    """
+    is_deleted = models.BooleanField('Удалён', default=False, db_index=True)
+
+    objects = SoftDeleteManager()
+    all_objects = SoftDeleteAllManager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        """Мягкое удаление."""
+        self.is_deleted = True
+        self.save(update_fields=['is_deleted'])
+
+    def hard_delete(self, using=None, keep_parents=False):
+        """Физическое удаление (использовать осторожно)."""
+        super().delete(using=using, keep_parents=keep_parents)
+
+    def restore(self):
+        """Восстановить запись."""
+        self.is_deleted = False
+        self.save(update_fields=['is_deleted'])
+
+
+class Department(SoftDeleteMixin, models.Model):
     """Отдел компании."""
     name = models.CharField('Название', max_length=200)
     description = models.TextField('Описание', blank=True)
@@ -38,7 +107,7 @@ class Position(models.Model):
         return self.title
 
 
-class Employee(models.Model):
+class Employee(SoftDeleteMixin, models.Model):
     """Расширенный профиль сотрудника, привязанный к User."""
 
     class Status(models.TextChoices):
@@ -79,6 +148,31 @@ class Employee(models.Model):
         db_index=True,
     )
     notes = models.TextField('Заметки', blank=True)
+
+    # ---- Финансовые / конфиденциальные поля (видны только Senior HR) ----
+    salary = models.DecimalField(
+        'Зарплата', max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    bonus = models.DecimalField(
+        'Премия', max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    passport_data = models.TextField('Паспортные данные', blank=True)
+    bank_account = models.CharField('Банковский счёт', max_length=100, blank=True)
+
+    # ---- СРО и охрана труда (промышленная специфика) ----
+    sro_permit_number = models.CharField(
+        'Номер допуска СРО', max_length=100, blank=True,
+    )
+    sro_permit_expiry = models.DateField(
+        'Срок действия допуска СРО', null=True, blank=True,
+    )
+    safety_cert_number = models.CharField(
+        'Номер сертификата ОТ', max_length=100, blank=True,
+    )
+    safety_cert_expiry = models.DateField(
+        'Срок действия сертификата ОТ', null=True, blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -270,6 +364,14 @@ class Document(models.Model):
         on_delete=models.CASCADE,
         related_name='documents',
         verbose_name='Сотрудник',
+    )
+    application = models.ForeignKey(
+        Application,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='documents',
+        verbose_name='Заявка',
     )
     title = models.CharField('Название', max_length=300)
     doc_type = models.CharField(
@@ -484,3 +586,44 @@ class HRActionLog(models.Model):
     def __str__(self):
         user_name = self.user.get_full_name() if self.user else 'Система'
         return f'{user_name} — {self.get_action_display()} — {self.target_repr}'
+
+
+# ---------------------------------------------------------------------------
+#  Employee Account — auto-generated credentials for hired candidates
+# ---------------------------------------------------------------------------
+
+def _generate_password(length: int = 12) -> str:
+    """Generate a random alphanumeric password."""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+class EmployeeAccount(models.Model):
+    """
+    Учётная запись сотрудника, автоматически создаваемая при приёме
+    кандидата (статус «Принят»). Хранит начальный пароль, чтобы HR мог
+    передать его сотруднику.
+    """
+    employee = models.OneToOneField(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='account',
+        verbose_name='Сотрудник',
+    )
+    username = models.CharField('Логин', max_length=150)
+    initial_password = models.CharField(
+        'Начальный пароль', max_length=128,
+        help_text='Пароль, сгенерированный при создании аккаунта. '
+                  'Сотрудник должен сменить его при первом входе.',
+    )
+    is_active = models.BooleanField('Активен', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Аккаунт сотрудника'
+        verbose_name_plural = 'Аккаунты сотрудников'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.employee} — {self.username}'

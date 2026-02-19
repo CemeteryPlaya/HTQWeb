@@ -9,11 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Document {
   id: number;
   employee: number;
   employee_name: string;
+  application?: number | null;
   title: string;
   doc_type: string;
   file: string;
@@ -30,6 +32,7 @@ interface EmployeeOption {
 const HRDocuments = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
   const { data: documents, isLoading, error } = useQuery({
     queryKey: ['hr-documents'],
     queryFn: async () => {
@@ -55,6 +58,18 @@ const HRDocuments = () => {
     description: '',
     file: null as File | null,
   });
+  const [pdfFields, setPdfFields] = useState({
+    candidate_name: '',
+    candidate_email: '',
+    vacancy_title: '',
+    department_name: '',
+    hire_date: '',
+    work_conditions: '',
+    work_type: '',
+    probation_period: '',
+    work_schedule: '',
+  });
+  const [pdfFieldsLoading, setPdfFieldsLoading] = useState(false);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -78,6 +93,7 @@ const HRDocuments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-archive'] });
       setDialogOpen(false);
       setEditing(null);
       setForm({ employee: 'none', title: '', doc_type: 'other', description: '', file: null });
@@ -88,7 +104,23 @@ const HRDocuments = () => {
     mutationFn: async (id: number) => {
       await api.delete(`hr/documents/${id}/`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-documents'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-archive'] });
+    },
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: async (args: { docId: number; fields: typeof pdfFields }) => {
+      const res = await api.post(`hr/documents/${args.docId}/regenerate/`, args.fields);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-archive'] });
+      setDialogOpen(false);
+      setEditing(null);
+    },
   });
 
   const startCreate = () => {
@@ -107,6 +139,13 @@ const HRDocuments = () => {
       file: null,
     });
     setDialogOpen(true);
+    // Загрузить поля PDF если документ привязан к заявке
+    if (doc.application && (doc.doc_type === 'contract' || doc.doc_type === 'order')) {
+      setPdfFieldsLoading(true);
+      api.get(`hr/documents/${doc.id}/pdf-fields/`).then((res) => {
+        setPdfFields(res.data);
+      }).catch(() => {}).finally(() => setPdfFieldsLoading(false));
+    }
   };
 
   const docTypeLabels: Record<string, string> = {
@@ -196,6 +235,68 @@ const HRDocuments = () => {
                 <Input type="file" onChange={(e: any) => setForm({ ...form, file: e.target.files?.[0] || null })} />
               </label>
 
+              {editing && (editing.doc_type === 'contract' || editing.doc_type === 'order') && editing.application && (
+                <div className="rounded-lg border border-dashed p-4 space-y-3">
+                  <p className="text-sm font-medium">{t('hr.pages.archive.editDialog.regenerateHint')}</p>
+                  {pdfFieldsLoading ? (
+                    <p className="text-sm text-muted-foreground">{t('hr.common.loading')}</p>
+                  ) : (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.candidateName')}
+                          <Input value={pdfFields.candidate_name} onChange={(e) => setPdfFields({ ...pdfFields, candidate_name: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.candidateEmail')}
+                          <Input value={pdfFields.candidate_email} onChange={(e) => setPdfFields({ ...pdfFields, candidate_email: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.vacancyTitle')}
+                          <Input value={pdfFields.vacancy_title} onChange={(e) => setPdfFields({ ...pdfFields, vacancy_title: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.departmentName')}
+                          <Input value={pdfFields.department_name} onChange={(e) => setPdfFields({ ...pdfFields, department_name: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.hireDate')}
+                          <Input type="date" value={pdfFields.hire_date} onChange={(e) => setPdfFields({ ...pdfFields, hire_date: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.workConditions')}
+                          <Input value={pdfFields.work_conditions} onChange={(e) => setPdfFields({ ...pdfFields, work_conditions: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.workType')}
+                          <Input value={pdfFields.work_type} onChange={(e) => setPdfFields({ ...pdfFields, work_type: e.target.value })} />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          {t('hr.pages.archive.editDialog.fields.probationPeriod')}
+                          <Input value={pdfFields.probation_period} onChange={(e) => setPdfFields({ ...pdfFields, probation_period: e.target.value })} />
+                        </label>
+                        {editing.doc_type === 'contract' && (
+                          <label className="grid gap-1 text-sm">
+                            {t('hr.pages.archive.editDialog.fields.workSchedule')}
+                            <Input value={pdfFields.work_schedule} onChange={(e) => setPdfFields({ ...pdfFields, work_schedule: e.target.value })} />
+                          </label>
+                        )}
+                      </div>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editing && regenerateMutation.mutate({ docId: editing.id, fields: pdfFields })}
+                        disabled={regenerateMutation.isPending}
+                      >
+                        {regenerateMutation.isPending
+                          ? t('hr.common.saving')
+                          : t('hr.pages.archive.editDialog.regenerate')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('hr.common.cancel')}</Button>
                 <Button onClick={() => saveMutation.mutate()} disabled={form.employee === 'none' || !form.title || saveMutation.isPending}>
@@ -233,6 +334,7 @@ const HRDocuments = () => {
                       {t('hr.common.download')}
                     </a>
                     <Button size="sm" variant="outline" onClick={() => startEdit(doc)}>{t('hr.common.edit')}</Button>
+                    {isSenior && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -245,6 +347,7 @@ const HRDocuments = () => {
                     >
                       {t('hr.common.delete')}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

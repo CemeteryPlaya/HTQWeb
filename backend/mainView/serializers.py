@@ -30,19 +30,57 @@ from .models import Profile
 
 class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
-    firstName = serializers.CharField(source='user.first_name', read_only=True)
-    lastName = serializers.CharField(source='user.last_name', read_only=True)
+    firstName = serializers.CharField(source='user.first_name', required=False)
+    lastName = serializers.CharField(source='user.last_name', required=False)
     avatarUrl = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
+    fio = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+    position = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'email', 'firstName', 'lastName', 'display_name', 'bio', 'avatar', 'avatarUrl', 'settings', 'roles', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'email', 'firstName', 'lastName', 'avatarUrl', 'created_at', 'updated_at', 'roles']
+        fields = ['id', 'email', 'firstName', 'lastName', 'patronymic', 'fio', 'display_name', 'bio', 'avatar', 'avatarUrl', 'settings', 'roles', 'department', 'position', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'avatarUrl', 'created_at', 'updated_at', 'roles', 'fio', 'department', 'position']
+
+    def update(self, instance, validated_data):
+        user_data = {}
+        if 'user' in validated_data:
+            user_nested = validated_data.pop('user')
+            if 'first_name' in user_nested:
+                user_data['first_name'] = user_nested['first_name']
+            if 'last_name' in user_nested:
+                user_data['last_name'] = user_nested['last_name']
+        
+        if user_data:
+            user = instance.user
+            for attr, value in user_data.items():
+                setattr(user, attr, value)
+            user.save()
+            
+        return super().update(instance, validated_data)
+
+    def get_fio(self, obj):
+        parts = [
+            obj.user.last_name,
+            obj.user.first_name,
+            obj.patronymic
+        ]
+        return " ".join(filter(None, parts)).strip() or obj.display_name
 
     def get_avatarUrl(self, obj):
         if obj.avatar:
             return obj.avatar.url
+        return None
+
+    def get_department(self, obj):
+        if hasattr(obj.user, 'employee') and obj.user.employee.department:
+            return obj.user.employee.department.name
+        return None
+
+    def get_position(self, obj):
+        if hasattr(obj.user, 'employee') and obj.user.employee.position:
+            return obj.user.employee.position.title
         return None
 
     def get_roles(self, obj):
@@ -52,7 +90,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Add group-based roles
         group_names = obj.user.groups.values_list('name', flat=True)
         for name in group_names:
-            role = name.lower()  # e.g. HR_Manager -> hr_manager, Editors -> editors
+            role = name.lower().replace(' ', '_').replace('-', '_')
             if role not in roles:
                 roles.append(role)
         return roles

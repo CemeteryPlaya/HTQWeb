@@ -14,6 +14,9 @@ import {
   ArrowLeft,
   UserCircle,
   History,
+  Handshake,
+  Archive,
+  KeyRound,
 } from 'lucide-react';
 const navItems = [
   { to: '/hr/employees', icon: Users, labelKey: 'hr.nav.employees' },
@@ -22,8 +25,11 @@ const navItems = [
   { to: '/hr/time-tracking', icon: Clock, labelKey: 'hr.nav.timeTracking' },
   { to: '/hr/vacancies', icon: ClipboardList, labelKey: 'hr.nav.vacancies' },
   { to: '/hr/applications', icon: ShieldCheck, labelKey: 'hr.nav.applications' },
+  { to: '/hr/offers', icon: Handshake, labelKey: 'hr.nav.offers' },
+  { to: '/hr/archive', icon: Archive, labelKey: 'hr.nav.archive' },
   { to: '/hr/documents', icon: FileText, labelKey: 'hr.nav.documents' },
   { to: '/hr/history', icon: History, labelKey: 'hr.nav.history' },
+  { to: '/hr/accounts', icon: KeyRound, labelKey: 'hr.nav.accounts' },
   { to: '/hr/profiles', icon: UserCircle, labelKey: 'hr.nav.profiles' },
 ];
 

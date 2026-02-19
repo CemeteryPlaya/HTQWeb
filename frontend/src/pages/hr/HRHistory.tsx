@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface HistoryRecord {
   id: number;
@@ -61,6 +62,7 @@ const EVENT_COLORS: Record<string, string> = {
 const HRHistory = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
 
   const { data: records, isLoading, error } = useQuery({
     queryKey: ['hr-personnel-history'],
@@ -379,6 +381,7 @@ const HRHistory = () => {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => startEdit(rec)}>{t('hr.common.edit')}</Button>
+                      {isSenior && (
                       <Button
                         size="sm"
                         variant="destructive"
@@ -388,6 +391,7 @@ const HRHistory = () => {
                       >
                         {t('hr.common.delete')}
                       </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

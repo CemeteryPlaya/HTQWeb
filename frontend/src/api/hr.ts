@@ -5,9 +5,10 @@ import api from '@/api/client';
 import type {
   Department, Position, Employee, EmployeeStats, HRUserOption,
   Vacancy, Application, TimeRecord, HRDocument, HRActionLog,
+  EmployeeAccount,
 } from '@/types/hr';
 
-const HR = 'v1/hr/';
+const HR = 'hr/';
 
 /* Unwrap paginated or plain array response */
 function unwrap<T>(data: any): T[] {
@@ -190,4 +191,21 @@ export const fetchActionLogs = async (params?: Record<string, string>): Promise<
   const query = params ? '?' + new URLSearchParams(params).toString() : '';
   const res = await api.get(`${HR}logs/${query}`);
   return unwrap<HRActionLog>(res.data);
+};
+
+/* ---------- Employee Accounts ---------- */
+export const fetchAccounts = async (params?: Record<string, string>): Promise<EmployeeAccount[]> => {
+  const query = params ? '?' + new URLSearchParams(params).toString() : '';
+  const res = await api.get(`${HR}accounts/${query}`);
+  return unwrap<EmployeeAccount>(res.data);
+};
+
+export const updateAccount = async (id: number, data: Partial<EmployeeAccount>): Promise<EmployeeAccount> => {
+  const res = await api.patch(`${HR}accounts/${id}/`, data);
+  return res.data;
+};
+
+export const resetAccountPassword = async (id: number): Promise<EmployeeAccount> => {
+  const res = await api.post(`${HR}accounts/${id}/reset-password/`);
+  return res.data;
 };

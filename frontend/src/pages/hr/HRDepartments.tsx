@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Department {
   id: number;
@@ -19,6 +20,7 @@ interface Department {
 const HRDepartments = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
   const { data: departments, isLoading, error } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
@@ -191,6 +193,7 @@ const HRDepartments = () => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => startEdit(dept)}>{t('hr.common.edit')}</Button>
+                    {isSenior && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -203,6 +206,7 @@ const HRDepartments = () => {
                     >
                       {t('hr.common.delete')}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

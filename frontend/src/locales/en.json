@@ -42,6 +42,10 @@
             "documents": "Documents",
             "profiles": "User Profiles",
             "history": "Personnel History",
+            "tasks": "Tasks",
+            "tasksList": "Tasks",
+            "roadmap": "Roadmap",
+            "reports": "Reports",
             "actionLogs": "Action Logs",
             "registrations": "Registrations"
         },
@@ -384,8 +388,11 @@
             "timeTracking": "Time Tracking",
             "vacancies": "Vacancies",
             "applications": "Applications",
+            "offers": "Offers",
+            "archive": "Archive",
             "documents": "Documents",
             "history": "History",
+            "accounts": "Accounts",
             "profiles": "Profiles",
             "logs": "Action Logs"
         },
@@ -426,7 +433,19 @@
                     "phone": "Phone",
                     "dateHired": "Date hired",
                     "dateDismissed": "Date dismissed",
-                    "notes": "Notes"
+                    "notes": "Notes",
+                    "salary": "Salary",
+                    "bonus": "Bonus",
+                    "passportData": "Passport data",
+                    "bankAccount": "Bank account",
+                    "sroPermitNumber": "SRO permit number",
+                    "sroPermitExpiry": "SRO permit expiry",
+                    "safetyCertNumber": "Safety certificate number",
+                    "safetyCertExpiry": "Safety certificate expiry"
+                },
+                "sections": {
+                    "sro": "SRO & Occupational Safety",
+                    "financial": "Financial data (confidential)"
                 },
                 "placeholders": {
                     "selectUser": "Select user",
@@ -615,6 +634,94 @@
                     "status": "Status",
                     "applied": "Applied",
                     "actions": "Actions"
+                },
+                "step": {
+                    "prev": "Previous Step",
+                    "next": "Next Step"
+                }
+            },
+            "offers": {
+                "title": "Offers",
+                "subtitle": "Accept or reject candidates after an offer.",
+                "error": "Error loading offers",
+                "empty": "No candidates with offers",
+                "status": {
+                    "offered": "Offered",
+                    "hired": "Hired",
+                    "rejected": "Rejected"
+                },
+                "actions": {
+                    "accept": "Accept",
+                    "reject": "Reject",
+                    "return": "Return to offer"
+                },
+                "seniorOnly": "Only Senior HR can approve hiring",
+                "table": {
+                    "candidate": "Candidate",
+                    "email": "Email",
+                    "vacancy": "Vacancy",
+                    "status": "Status",
+                    "date": "Date",
+                    "actions": "Actions"
+                }
+            },
+            "archive": {
+                "title": "Archive",
+                "subtitle": "Hired/rejected applications and related documents.",
+                "error": "Error loading archive",
+                "emptyApplications": "No archived applications yet",
+                "emptyDocuments": "No archived documents yet",
+                "filters": {
+                    "all": "All",
+                    "noStatus": "No status",
+                    "dateFrom": "Date from",
+                    "dateTo": "Date to",
+                    "clear": "Clear"
+                },
+                "status": {
+                    "hired": "Hired",
+                    "rejected": "Rejected"
+                },
+                "counters": {
+                    "applications": "Applications",
+                    "documents": "Documents"
+                },
+                "sections": {
+                    "applications": "Applications Archive",
+                    "documents": "Documents Archive"
+                },
+                "applications": {
+                    "candidate": "Candidate",
+                    "email": "Email",
+                    "vacancy": "Vacancy",
+                    "status": "Status",
+                    "updated": "Updated"
+                },
+                "documents": {
+                    "employee": "Employee",
+                    "candidate": "Candidate",
+                    "title": "Document",
+                    "type": "Type",
+                    "status": "Application Status",
+                    "date": "Date",
+                    "file": "File"
+                },
+                "editDialog": {
+                    "title": "Edit Document",
+                    "replaceFile": "Replace file",
+                    "regenerateHint": "Edit PDF content",
+                    "regenerate": "Regenerate PDF",
+                    "fields": {
+                        "candidateName": "Full name",
+                        "candidateEmail": "Email",
+                        "vacancyTitle": "Position",
+                        "departmentName": "Department",
+                        "hireDate": "Hire date",
+                        "workConditions": "Employment conditions",
+                        "workType": "Work type",
+                        "probationPeriod": "Probation period",
+                        "workSchedule": "Work schedule"
+                    }
                 }
             },
             "documents": {
@@ -655,7 +762,6 @@
             "logs": {
                 "title": "Action Logs",
                 "subtitle": "Audit trail of all user actions.",
-                "error": "Error loading logs",
                 "allModules": "All modules",
                 "modules": {
                     "news": "News",
@@ -724,7 +830,41 @@
                     "orderNumber": "Order #",
                     "actions": "Actions"
                 }
+            },
+            "accounts": {
+                "title": "Employee Accounts",
+                "subtitle": "Credentials auto-generated when candidates are hired.",
+                "error": "Error loading accounts",
+                "searchPlaceholder": "Search by name, email or username...",
+                "editTitle": "Edit Account",
+                "resetPassword": "Reset",
+                "copy": "Copy",
+                "copied": "Copied!",
+                "active": "Active",
+                "inactive": "Disabled",
+                "empty": "No accounts yet. Accounts are created automatically when candidates are hired.",
+                "passwordHint": "Saving will also update the user's login password.",
+                "fields": {
+                    "employee": "Employee",
+                    "email": "Email",
+                    "department": "Department",
+                    "position": "Position",
+                    "username": "Username",
+                    "password": "Password",
+                    "status": "Status",
+                    "isActive": "Account active"
+                }
             }
+        }
+    },
+    "tasks": {
+        "title": "Tasks",
+        "navigation": "Navigation",
+        "backToMain": "Back to profile",
+        "nav": {
+            "tasks": "Tasks",
+            "roadmap": "Roadmap",
+            "reports": "Reports"
         }
     },
     "auth": {

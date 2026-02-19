@@ -30,6 +30,13 @@ import HRDocuments from "./pages/hr/HRDocuments";
 import HRLogs from "./pages/hr/HRLogs";
 import HRProfiles from "./pages/hr/HRProfiles";
 import HRHistory from "./pages/hr/HRHistory";
+import HROffers from "./pages/hr/HROffers";
+import HRArchive from "./pages/hr/HRArchive";
+import HRAccounts from "./pages/hr/HRAccounts";
+import HRTasks from "./pages/hr/HRTasks";
+import HRTaskDetail from "./pages/hr/HRTaskDetail";
+import HRRoadmap from "./pages/hr/HRRoadmap";
+import HRReports from "./pages/hr/HRReports";
 import AdminRegistrations from "./pages/AdminRegistrations";
 
 const queryClient = new QueryClient();
@@ -143,6 +150,11 @@ const App = () => (
                   <HRApplications />
                 </RequireAuth>
               } />
+              <Route path="/hr/offers" element={
+                <RequireAuth>
+                  <HROffers />
+                </RequireAuth>
+              } />
               <Route path="/hr/documents" element={
                 <RequireAuth>
                   <HRDocuments />
@@ -161,6 +173,36 @@ const App = () => (
               <Route path="/hr/history" element={
                 <RequireAuth>
                   <HRHistory />
+                </RequireAuth>
+              } />
+              <Route path="/hr/archive" element={
+                <RequireAuth>
+                  <HRArchive />
+                </RequireAuth>
+              } />
+              <Route path="/hr/accounts" element={
+                <RequireAuth>
+                  <HRAccounts />
+                </RequireAuth>
+              } />
+              <Route path="/tasks" element={
+                <RequireAuth>
+                  <HRTasks />
+                </RequireAuth>
+              } />
+              <Route path="/tasks/:id" element={
+                <RequireAuth>
+                  <HRTaskDetail />
+                </RequireAuth>
+              } />
+              <Route path="/tasks/roadmap" element={
+                <RequireAuth>
+                  <HRRoadmap />
+                </RequireAuth>
+              } />
+              <Route path="/tasks/reports" element={
+                <RequireAuth>
+                  <HRReports />
                 </RequireAuth>
               } />
               <Route path="/admin/registrations" element={

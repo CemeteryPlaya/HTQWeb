@@ -115,6 +115,9 @@ export interface HRDocument {
   id: number;
   employee: number;
   employee_name: string;
+  application: number | null;
+  application_status: ApplicationStatus | null;
+  application_candidate_name: string | null;
   title: string;
   doc_type: DocType;
   file: string;
@@ -122,6 +125,11 @@ export interface HRDocument {
   uploaded_by: number | null;
   uploaded_by_name: string | null;
   created_at: string;
+}
+
+export interface HRArchiveResponse {
+  applications: Application[];
+  documents: HRDocument[];
 }
 
 /* ---------- Action Logs ---------- */
@@ -145,4 +153,19 @@ export interface HRActionLog {
   details: string;
   ip_address: string | null;
   created_at: string;
+}
+
+/* ---------- Employee Accounts ---------- */
+export interface EmployeeAccount {
+  id: number;
+  employee: number;
+  employee_name: string;
+  email: string;
+  department_name: string | null;
+  position_title: string | null;
+  username: string;
+  initial_password: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }

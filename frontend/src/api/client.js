@@ -77,6 +77,8 @@ function createApiClientInstance(base) {
             const url = error.config?.url || '';
             // Don't try to refresh for auth endpoints themselves
             const isAuthEndpoint = url.includes('token/') || url.includes('register/');
+
+            // ---- 401: token expired → refresh ----
             if (error.response?.status === 401 && !error.config._retry && !isAuthEndpoint) {
                 error.config._retry = true;
                 try {
@@ -84,15 +86,45 @@ function createApiClientInstance(base) {
                     if (!refresh) throw new Error('No refresh token');
                     const res = await axios.post(base + 'token/refresh/', { refresh });
                     localStorage.setItem('access', res.data.access);
+                    if (res.data.refresh) {
+                        localStorage.setItem('refresh', res.data.refresh);
+                    }
                     client.defaults.headers.common['Authorization'] = 'Bearer ' + res.data.access;
+                    error.config.headers['Authorization'] = 'Bearer ' + res.data.access;
                     return client(error.config);
                 } catch (refreshError) {
                     console.error('Refresh token failed', refreshError);
                     localStorage.removeItem('access');
                     localStorage.removeItem('refresh');
+                    // Redirect to login so the user can re-authenticate
+                    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                        window.location.href = '/login';
+                    }
                     return Promise.reject(refreshError);
                 }
             }
+
+            // ---- 403: might be stale token with outdated claims → try refresh once ----
+            if (error.response?.status === 403 && !error.config._retry403 && !isAuthEndpoint) {
+                error.config._retry403 = true;
+                try {
+                    const refresh = localStorage.getItem('refresh');
+                    if (!refresh) throw new Error('No refresh token');
+                    const res = await axios.post(base + 'token/refresh/', { refresh });
+                    localStorage.setItem('access', res.data.access);
+                    if (res.data.refresh) {
+                        localStorage.setItem('refresh', res.data.refresh);
+                    }
+                    client.defaults.headers.common['Authorization'] = 'Bearer ' + res.data.access;
+                    error.config.headers['Authorization'] = 'Bearer ' + res.data.access;
+                    return client(error.config);
+                } catch (_refreshErr) {
+                    // Refresh didn't help — it's a real permission denial.
+                    // Fall through to normal error handling.
+                    console.warn('[api] 403 after token refresh — real permission denial', url);
+                }
+            }
+
             return Promise.reject(error);
         }
     );

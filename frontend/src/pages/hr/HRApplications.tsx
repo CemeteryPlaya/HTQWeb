@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Application {
   id: number;
@@ -19,7 +20,7 @@ interface Application {
   email: string;
   phone: string;
   vacancy_title: string;
-  status: string;
+  status: 'new' | 'reviewed' | 'interview' | 'offered' | 'rejected' | 'hired';
   created_at: string;
   notes?: string;
   resume?: string | null;
@@ -34,6 +35,7 @@ interface Vacancy {
 const HRApplications = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
   const { data: applications, isLoading, error } = useQuery({
     queryKey: ['hr-applications'],
     queryFn: async () => {
@@ -58,7 +60,6 @@ const HRApplications = () => {
     last_name: '',
     email: '',
     phone: '',
-    status: 'new',
     notes: '',
     cover_letter: '',
     resume: null as File | null,
@@ -72,13 +73,12 @@ const HRApplications = () => {
       formData.append('last_name', form.last_name);
       formData.append('email', form.email);
       formData.append('phone', form.phone || '');
-      formData.append('status', form.status);
       formData.append('notes', form.notes || '');
       formData.append('cover_letter', form.cover_letter || '');
       if (form.resume) formData.append('resume', form.resume);
 
       if (editing) {
-        const res = await api.put(`hr/applications/${editing.id}/`, formData, {
+        const res = await api.patch(`hr/applications/${editing.id}/`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         return res.data;
@@ -98,7 +98,6 @@ const HRApplications = () => {
         last_name: '',
         email: '',
         phone: '',
-        status: 'new',
         notes: '',
         cover_letter: '',
         resume: null,
@@ -121,7 +120,6 @@ const HRApplications = () => {
       last_name: '',
       email: '',
       phone: '',
-      status: 'new',
       notes: '',
       cover_letter: '',
       resume: null,
@@ -137,13 +135,41 @@ const HRApplications = () => {
       last_name: app.last_name || '',
       email: app.email || '',
       phone: app.phone || '',
-      status: app.status || 'new',
       notes: app.notes || '',
       cover_letter: app.cover_letter || '',
       resume: null,
     });
     setDialogOpen(true);
   };
+
+  const prevStatusMap: Record<Application['status'], Application['status'] | null> = {
+    new: null,
+    reviewed: 'new',
+    interview: 'reviewed',
+    offered: 'interview',
+    hired: null,
+    rejected: null,
+  };
+
+  const nextStatusMap: Record<Application['status'], Application['status'] | null> = {
+    new: 'reviewed',
+    reviewed: 'interview',
+    interview: 'offered',
+    offered: null,
+    hired: null,
+    rejected: null,
+  };
+
+  const stageMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: Application['status'] }) => {
+      const res = await api.patch(`hr/applications/${id}/`, { status });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-offers'] });
+    },
+  });
 
   const statusLabels: Record<string, string> = {
     new: t('hr.pages.applications.status.new'),
@@ -224,23 +250,6 @@ const HRApplications = () => {
               </div>
 
               <label className="grid gap-2 text-sm">
-                {t('hr.pages.applications.fields.status')}
-                <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('hr.pages.applications.placeholders.selectStatus')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">{t('hr.pages.applications.status.new')}</SelectItem>
-                    <SelectItem value="reviewed">{t('hr.pages.applications.status.reviewed')}</SelectItem>
-                    <SelectItem value="interview">{t('hr.pages.applications.status.interview')}</SelectItem>
-                    <SelectItem value="offered">{t('hr.pages.applications.status.offered')}</SelectItem>
-                    <SelectItem value="rejected">{t('hr.pages.applications.status.rejected')}</SelectItem>
-                    <SelectItem value="hired">{t('hr.pages.applications.status.hired')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
-
-              <label className="grid gap-2 text-sm">
                 {t('hr.pages.applications.fields.coverLetter')}
                 <Textarea value={form.cover_letter} onChange={(e) => setForm({ ...form, cover_letter: e.target.value })} />
               </label>
@@ -266,7 +275,7 @@ const HRApplications = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -291,8 +300,30 @@ const HRApplications = () => {
                 </TableCell>
                 <TableCell>{new Date(app.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!prevStatusMap[app.status] || stageMutation.isPending}
+                      onClick={() => {
+                        const prevStatus = prevStatusMap[app.status];
+                        if (prevStatus) stageMutation.mutate({ id: app.id, status: prevStatus });
+                      }}
+                    >
+                      {t('hr.pages.applications.step.prev')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={!nextStatusMap[app.status] || stageMutation.isPending}
+                      onClick={() => {
+                        const nextStatus = nextStatusMap[app.status];
+                        if (nextStatus) stageMutation.mutate({ id: app.id, status: nextStatus });
+                      }}
+                    >
+                      {t('hr.pages.applications.step.next')}
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => startEdit(app)}>{t('hr.common.edit')}</Button>
+                    {isSenior && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -305,6 +336,7 @@ const HRApplications = () => {
                     >
                       {t('hr.common.delete')}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

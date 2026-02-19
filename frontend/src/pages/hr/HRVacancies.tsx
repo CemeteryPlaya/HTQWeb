@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Vacancy {
   id: number;
@@ -34,6 +35,7 @@ interface Department {
 const HRVacancies = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
   const { data: vacancies, isLoading, error } = useQuery({
     queryKey: ['hr-vacancies'],
     queryFn: async () => {
@@ -200,16 +202,18 @@ const HRVacancies = () => {
                   </SelectContent>
                 </Select>
               </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm">
-                  {t('hr.pages.vacancies.fields.salaryMin')}
-                  <Input type="number" value={form.salary_min} onChange={(e) => setForm({ ...form, salary_min: e.target.value })} />
-                </label>
-                <label className="grid gap-2 text-sm">
-                  {t('hr.pages.vacancies.fields.salaryMax')}
-                  <Input type="number" value={form.salary_max} onChange={(e) => setForm({ ...form, salary_max: e.target.value })} />
-                </label>
-              </div>
+              {isSenior && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.vacancies.fields.salaryMin')}
+                    <Input type="number" value={form.salary_min} onChange={(e) => setForm({ ...form, salary_min: e.target.value })} />
+                  </label>
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.vacancies.fields.salaryMax')}
+                    <Input type="number" value={form.salary_max} onChange={(e) => setForm({ ...form, salary_max: e.target.value })} />
+                  </label>
+                </div>
+              )}
               <label className="grid gap-2 text-sm">
                 {t('hr.pages.vacancies.fields.description')}
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -236,7 +240,7 @@ const HRVacancies = () => {
               <TableHead>{t('hr.pages.vacancies.table.title')}</TableHead>
               <TableHead>{t('hr.pages.vacancies.table.department')}</TableHead>
               <TableHead>{t('hr.pages.vacancies.table.status')}</TableHead>
-              <TableHead>{t('hr.pages.vacancies.table.salaryRange')}</TableHead>
+              {isSenior && <TableHead>{t('hr.pages.vacancies.table.salaryRange')}</TableHead>}
               <TableHead>{t('hr.pages.vacancies.table.applications')}</TableHead>
               <TableHead>{t('hr.pages.vacancies.table.created')}</TableHead>
               <TableHead className="text-right">{t('hr.pages.vacancies.table.actions')}</TableHead>
@@ -252,28 +256,32 @@ const HRVacancies = () => {
                     {statusLabels[vacancy.status] || vacancy.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {vacancy.salary_min && vacancy.salary_max
-                    ? t('hr.pages.vacancies.salaryRange', { min: vacancy.salary_min, max: vacancy.salary_max })
-                    : '—'}
-                </TableCell>
+                {isSenior && (
+                  <TableCell>
+                    {vacancy.salary_min && vacancy.salary_max
+                      ? t('hr.pages.vacancies.salaryRange', { min: vacancy.salary_min, max: vacancy.salary_max })
+                      : '—'}
+                  </TableCell>
+                )}
                 <TableCell>{vacancy.applications_count || 0}</TableCell>
                 <TableCell>{new Date(vacancy.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => startEdit(vacancy)}>{t('hr.common.edit')}</Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.vacancies.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(vacancy.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                    {isSenior && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.vacancies.deleteConfirm')))
+                          {
+                            deleteMutation.mutate(vacancy.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

@@ -5,7 +5,8 @@ from .views import (
     DepartmentViewSet, PositionViewSet,
     EmployeeViewSet, VacancyViewSet, ApplicationViewSet,
     TimeTrackingViewSet, DocumentViewSet, HRActionLogViewSet,
-    PersonnelHistoryViewSet,
+    PersonnelHistoryViewSet, EmployeeAccountViewSet,
+    whoami,
 )
 
 router = DefaultRouter()
@@ -18,9 +19,11 @@ router.register(r'time-tracking', TimeTrackingViewSet, basename='hr-timetracking
 router.register(r'documents', DocumentViewSet, basename='hr-document')
 router.register(r'personnel-history', PersonnelHistoryViewSet, basename='hr-personnel-history')
 router.register(r'logs', HRActionLogViewSet, basename='hr-log')
+router.register(r'accounts', EmployeeAccountViewSet, basename='hr-account')
 
 app_name = 'hr'
 
 urlpatterns = [
+    path('whoami/', whoami, name='hr-whoami'),
     path('', include(router.urls)),
 ]

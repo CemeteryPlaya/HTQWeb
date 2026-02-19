@@ -21,6 +21,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
     const { t } = useTranslation();
 
     const profileSchema = z.object({
+        firstName: z.string().max(100).optional(),
+        lastName: z.string().max(100).optional(),
+        patronymic: z.string().max(100).optional(),
         display_name: z.string().min(2, t('profile.errors.nameMin')).max(100),
         bio: z.string().max(1000).optional(),
         settings: z.object({
@@ -32,6 +35,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
     const form = useForm<z.infer<typeof profileSchema>>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
+            firstName: profile.firstName || "",
+            lastName: profile.lastName || "",
+            patronymic: profile.patronymic || "",
             display_name: profile.display_name || "",
             bio: profile.bio || "",
             settings: profile.settings || {}
@@ -47,6 +53,48 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('profile.lastName')}</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder={t('profile.lastNamePlaceholder')} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('profile.firstName')}</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder={t('profile.firstNamePlaceholder')} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="patronymic"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('profile.patronymic')}</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder={t('profile.patronymicPlaceholder')} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
                 <FormField
                     control={form.control}
                     name="display_name"

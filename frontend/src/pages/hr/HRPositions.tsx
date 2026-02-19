@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Position {
   id: number;
@@ -24,6 +25,7 @@ interface Department {
 const HRPositions = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior } = useHRLevel();
   const { data: positions, isLoading, error } = useQuery({
     queryKey: ['hr-positions'],
     queryFn: async () => {
@@ -239,6 +241,7 @@ const HRPositions = () => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => startEdit(pos)}>{t('hr.common.edit')}</Button>
+                    {isSenior && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -251,6 +254,7 @@ const HRPositions = () => {
                     >
                       {t('hr.common.delete')}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

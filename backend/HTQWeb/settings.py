@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'mainView',
     'media_manager',
     'hr',
+    'tasks',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -239,6 +240,17 @@ REST_FRAMEWORK = {
     },
 }
 
+# ---------- JWT ----------
+from datetime import timedelta  # noqa: E402
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -254,6 +266,16 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'ERROR',
             'propagate': True,
+        },
+        'hr.roles': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'hr.permissions': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
         },
     },
 }

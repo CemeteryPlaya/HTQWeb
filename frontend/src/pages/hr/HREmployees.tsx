@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRLevel } from '@/hooks/useHRLevel';
 
 interface Employee {
   id: number;
@@ -25,6 +26,16 @@ interface Employee {
   date_dismissed?: string | null;
   status: string;
   notes?: string;
+  // Sensitive (Senior-only — absent from API response for Junior)
+  salary?: string | null;
+  bonus?: string | null;
+  passport_data?: string;
+  bank_account?: string;
+  // SRO (read-only for Junior)
+  sro_permit_number?: string;
+  sro_permit_expiry?: string | null;
+  safety_cert_number?: string;
+  safety_cert_expiry?: string | null;
 }
 
 interface Department {
@@ -46,6 +57,7 @@ interface HRUser {
 const HREmployees = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { isSenior, isLoading: levelLoading } = useHRLevel();
   const { data: employees, isLoading, error } = useQuery({
     queryKey: ['hr-employees'],
     queryFn: async () => {
@@ -89,6 +101,16 @@ const HREmployees = () => {
     date_dismissed: '',
     status: 'active',
     notes: '',
+    // Senior-only fields
+    salary: '',
+    bonus: '',
+    passport_data: '',
+    bank_account: '',
+    // SRO fields
+    sro_permit_number: '',
+    sro_permit_expiry: '',
+    safety_cert_number: '',
+    safety_cert_expiry: '',
   });
 
   const saveMutation = useMutation({
@@ -103,6 +125,17 @@ const HREmployees = () => {
         status: form.status,
         notes: form.notes || '',
       };
+      // Senior-only fields — only send when user is Senior
+      if (isSenior) {
+        payload.salary = form.salary ? Number(form.salary) : null;
+        payload.bonus = form.bonus ? Number(form.bonus) : null;
+        payload.passport_data = form.passport_data || '';
+        payload.bank_account = form.bank_account || '';
+        payload.sro_permit_number = form.sro_permit_number || '';
+        payload.sro_permit_expiry = form.sro_permit_expiry || null;
+        payload.safety_cert_number = form.safety_cert_number || '';
+        payload.safety_cert_expiry = form.safety_cert_expiry || null;
+      }
       if (editing) {
         if (!payload.user) {
           delete payload.user;
@@ -119,14 +152,10 @@ const HREmployees = () => {
       setDialogOpen(false);
       setEditing(null);
       setForm({
-        user: 'none',
-        position: 'none',
-        department: 'none',
-        phone: '',
-        date_hired: '',
-        date_dismissed: '',
-        status: 'active',
-        notes: '',
+        user: 'none', position: 'none', department: 'none',
+        phone: '', date_hired: '', date_dismissed: '', status: 'active', notes: '',
+        salary: '', bonus: '', passport_data: '', bank_account: '',
+        sro_permit_number: '', sro_permit_expiry: '', safety_cert_number: '', safety_cert_expiry: '',
       });
     },
   });
@@ -144,14 +173,10 @@ const HREmployees = () => {
   const startCreate = () => {
     setEditing(null);
     setForm({
-      user: 'none',
-      position: 'none',
-      department: 'none',
-      phone: '',
-      date_hired: '',
-      date_dismissed: '',
-      status: 'active',
-      notes: '',
+      user: 'none', position: 'none', department: 'none',
+      phone: '', date_hired: '', date_dismissed: '', status: 'active', notes: '',
+      salary: '', bonus: '', passport_data: '', bank_account: '',
+      sro_permit_number: '', sro_permit_expiry: '', safety_cert_number: '', safety_cert_expiry: '',
     });
     setDialogOpen(true);
   };
@@ -167,6 +192,14 @@ const HREmployees = () => {
       date_dismissed: emp.date_dismissed || '',
       status: emp.status || 'active',
       notes: emp.notes || '',
+      salary: emp.salary ? String(emp.salary) : '',
+      bonus: emp.bonus ? String(emp.bonus) : '',
+      passport_data: emp.passport_data || '',
+      bank_account: emp.bank_account || '',
+      sro_permit_number: emp.sro_permit_number || '',
+      sro_permit_expiry: emp.sro_permit_expiry || '',
+      safety_cert_number: emp.safety_cert_number || '',
+      safety_cert_expiry: emp.safety_cert_expiry || '',
     });
     setDialogOpen(true);
   };
@@ -204,7 +237,7 @@ const HREmployees = () => {
           <DialogTrigger asChild>
             <Button onClick={startCreate}>{t('hr.pages.employees.add')}</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? t('hr.pages.employees.edit') : t('hr.pages.employees.new')}</DialogTitle>
             </DialogHeader>
@@ -306,6 +339,58 @@ const HREmployees = () => {
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </label>
 
+              {/* ═══ СРО / Охрана труда (Senior — editable, Junior — read-only) ═══ */}
+              <div className="border-t pt-4 mt-2">
+                <h4 className="text-sm font-semibold mb-3">{t('hr.pages.employees.sections.sro')}</h4>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.employees.fields.sroPermitNumber')}
+                    <Input value={form.sro_permit_number} readOnly={!isSenior} onChange={(e) => setForm({ ...form, sro_permit_number: e.target.value })} />
+                  </label>
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.employees.fields.sroPermitExpiry')}
+                    <Input type="date" value={form.sro_permit_expiry} readOnly={!isSenior} onChange={(e) => setForm({ ...form, sro_permit_expiry: e.target.value })} />
+                  </label>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 mt-3">
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.employees.fields.safetyCertNumber')}
+                    <Input value={form.safety_cert_number} readOnly={!isSenior} onChange={(e) => setForm({ ...form, safety_cert_number: e.target.value })} />
+                  </label>
+                  <label className="grid gap-2 text-sm">
+                    {t('hr.pages.employees.fields.safetyCertExpiry')}
+                    <Input type="date" value={form.safety_cert_expiry} readOnly={!isSenior} onChange={(e) => setForm({ ...form, safety_cert_expiry: e.target.value })} />
+                  </label>
+                </div>
+              </div>
+
+              {/* ═══ Финансовые данные (только Senior HR) ═══ */}
+              {isSenior && (
+                <div className="border-t pt-4 mt-2">
+                  <h4 className="text-sm font-semibold mb-3">{t('hr.pages.employees.sections.financial')}</h4>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-2 text-sm">
+                      {t('hr.pages.employees.fields.salary')}
+                      <Input type="number" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} />
+                    </label>
+                    <label className="grid gap-2 text-sm">
+                      {t('hr.pages.employees.fields.bonus')}
+                      <Input type="number" value={form.bonus} onChange={(e) => setForm({ ...form, bonus: e.target.value })} />
+                    </label>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 mt-3">
+                    <label className="grid gap-2 text-sm">
+                      {t('hr.pages.employees.fields.passportData')}
+                      <Input value={form.passport_data} onChange={(e) => setForm({ ...form, passport_data: e.target.value })} />
+                    </label>
+                    <label className="grid gap-2 text-sm">
+                      {t('hr.pages.employees.fields.bankAccount')}
+                      <Input value={form.bank_account} onChange={(e) => setForm({ ...form, bank_account: e.target.value })} />
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('hr.common.cancel')}</Button>
                 <Button onClick={() => saveMutation.mutate()} disabled={(!editing && form.user === 'none') || saveMutation.isPending}>
@@ -344,18 +429,20 @@ const HREmployees = () => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => startEdit(emp)}>{t('hr.common.edit')}</Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.employees.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(emp.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                    {isSenior && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.employees.deleteConfirm')))
+                          {
+                            deleteMutation.mutate(emp.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

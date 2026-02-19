@@ -1,4 +1,5 @@
 from django import template
+from hr.roles import has_hr_group
 
 register = template.Library()
 
@@ -23,4 +24,4 @@ def has_hr_access(context):
         return False
     if user.is_superuser:
         return True
-    return user.groups.filter(name='HR_Manager').exists()
+    return has_hr_group(user)

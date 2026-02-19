@@ -26,6 +26,7 @@ class Profile(models.Model):
     display_name = models.CharField(max_length=100, blank=True)
     bio = models.TextField(max_length=1000, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    patronymic = models.CharField(max_length=100, blank=True)
     settings = models.JSONField(default=dict, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)

@@ -28,8 +28,12 @@ const MyProfile = () => {
     const updateProfileMutation = useMutation({
         mutationFn: async (data: Partial<UserProfile> & { avatar?: File }) => {
             const formData = new FormData();
-            if (data.display_name) formData.append('display_name', data.display_name);
-            if (data.bio) formData.append('bio', data.bio);
+
+            if (data.display_name !== undefined) formData.append('display_name', data.display_name);
+            if (data.firstName !== undefined) formData.append('firstName', data.firstName);
+            if (data.lastName !== undefined) formData.append('lastName', data.lastName);
+            if (data.patronymic !== undefined) formData.append('patronymic', data.patronymic);
+            if (data.bio !== undefined) formData.append('bio', data.bio);
             if (data.settings) formData.append('settings', JSON.stringify(data.settings));
             if (data.avatar) formData.append('avatar', data.avatar);
 
@@ -50,11 +54,6 @@ const MyProfile = () => {
 
     const handleFormSubmit = (data: ProfileFormData) => {
         const { avatar, ...rest } = data;
-        // If avatar file list has a file, use it, otherwise don't send avatar in this mutation 
-        // (unless we want to support avatar update via form, but currently we use handleAvatarChange for that)
-        // actually ProfileForm schema doesn't have avatar yet, so it might be undefined.
-        // But if we add it later, this logic holds.
-        // For now, just pass the rest.
         updateProfileMutation.mutate(rest);
     };
 
@@ -96,18 +95,22 @@ const MyProfile = () => {
                 {profile && (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         <div className="lg:col-span-1">
-                            <ProfileSidebar roles={profile.roles} />
+                            <ProfileSidebar
+                                roles={profile.roles}
+                                department={profile.department}
+                                position={profile.position}
+                            />
                         </div>
 
                         <div className="lg:col-span-3 space-y-6">
                             <div className="bg-card rounded-lg border p-6 flex flex-col items-center">
                                 <ProfileAvatar
                                     avatarUrl={profile.avatarUrl}
-                                    firstName={profile.firstName || profile.display_name}
+                                    firstName={profile.fio || profile.displayName || profile.firstName}
                                     onAvatarChange={handleAvatarChange}
                                 />
                                 <div className="mt-4 text-center">
-                                    <h3 className="font-bold text-lg">{profile.display_name}</h3>
+                                    <h3 className="font-bold text-lg">{profile.fio || profile.display_name}</h3>
                                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                                     <p className="text-sm text-muted-foreground mt-2">{t('profile.rolesLabel')}: {profile.roles?.join(', ') || t('profile.rolesNone')}</p>
                                     <p className="text-sm text-muted-foreground">{t('profile.staffLabel')}: {profile.user?.is_staff ? t('profile.yes') : (profile.roles?.includes('staff') ? t('profile.yes') : t('profile.no'))}</p>
