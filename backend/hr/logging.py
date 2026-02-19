@@ -93,4 +93,5 @@ def log_action(
         employee=employee,
         department=department,
         position=position,
+        module=HRActionLog.Module.HR,
     )

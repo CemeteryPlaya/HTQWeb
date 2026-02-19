@@ -20,7 +20,7 @@ const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const registerSchema = z.object({
-        username: z.string().min(3, t('auth.errors.usernameMin')),
+        fullName: z.string().min(3, t('auth.errors.fullNameMin')),
         email: z.string().email(t('auth.errors.emailInvalid')),
         password: z.string().min(6, t('auth.errors.passwordMin')),
         confirmPassword: z.string()
@@ -34,7 +34,7 @@ const Register = () => {
     const form = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
-            username: "",
+            fullName: "",
             email: "",
             password: "",
             confirmPassword: ""
@@ -45,16 +45,21 @@ const Register = () => {
         setIsLoading(true);
         try {
             await api.post('v1/register/', {
-                username: data.username,
+                full_name: data.fullName,
                 email: data.email,
                 password: data.password
             });
-            toast.success(t('auth.success'));
+            toast.success(t('auth.pendingApproval'));
             navigate('/login');
         } catch (error) {
             console.error(error);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const msg = (error as any).response?.data?.username?.[0] || t('auth.failed');
+            const responseData = (error as any).response?.data || {};
+            const msg =
+                responseData.full_name?.[0] ||
+                responseData.email?.[0] ||
+                responseData.detail ||
+                t('auth.failed');
             toast.error(msg);
         } finally {
             setIsLoading(false);
@@ -71,10 +76,10 @@ const Register = () => {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <FormField
                                 control={form.control}
-                                name="username"
+                                name="fullName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>{t('auth.username')}</FormLabel>
+                                        <FormLabel>{t('auth.fullName')}</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>

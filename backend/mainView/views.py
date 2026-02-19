@@ -32,12 +32,16 @@ class ItemViewSet(viewsets.ModelViewSet):
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-    """Allow read-only access to anyone, but write access only to admin/staff users."""
+    """Allow read-only access to anyone, but write access only to admin/staff/Editors users."""
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return bool(request.user and request.user.is_authenticated and request.user.is_staff)
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if request.user.is_staff:
+            return True
+        return request.user.groups.filter(name='Editors').exists()
 
 
 class NewsViewSet(viewsets.ModelViewSet):
@@ -50,9 +54,10 @@ class NewsViewSet(viewsets.ModelViewSet):
     pagination_class = None  # Disable pagination to return a simple array
 
     def get_queryset(self):
-        # For anonymous / public users, only return published items
-        if self.request.user and self.request.user.is_authenticated and self.request.user.is_staff:
-            return super().get_queryset()
+        # For staff users or Editors group members, return all items (including unpublished)
+        if self.request.user and self.request.user.is_authenticated:
+            if self.request.user.is_staff or self.request.user.groups.filter(name='Editors').exists():
+                return super().get_queryset()
         return News.objects.filter(published=True).order_by('-published_at', '-created_at')
 
 
@@ -66,16 +71,24 @@ from rest_framework.response import Response
 class ProfileViewSet(viewsets.ModelViewSet):
     """
     API endpoint for User Profiles.
+    Regular users can only see/edit their own profile via /me/.
+    HR Managers and staff can list and edit all profiles.
     """
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'put', 'patch', 'head', 'options']
+    pagination_class = None
+
+    def _is_hr_or_staff(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return True
+        return user.groups.filter(name='HR_Manager').exists()
 
     def get_queryset(self):
-        # Users can only see their own profile in this simplified version, 
-        # or we could allow viewing others if requirements said so.
-        # But requirement says "My Profile", so restricting to own for now safety.
+        if self._is_hr_or_staff():
+            return Profile.objects.select_related('user').all().order_by('user__first_name', 'user__last_name')
         if self.request.user.is_authenticated:
             return Profile.objects.filter(user=self.request.user)
         return Profile.objects.none()
@@ -115,6 +128,31 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'put', 'patch', 'head', 'options']
 
 
+class PendingRegistrationViewSet(viewsets.ReadOnlyModelViewSet):
+    """List users awaiting approval (is_active=False) and approve/reject them."""
+    from .serializers import PendingUserSerializer
+    serializer_class = PendingUserSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = None
+
+    def get_queryset(self):
+        return User.objects.filter(is_active=False).order_by('-date_joined')
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        return Response({'status': 'approved', 'username': user.username})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        user = self.get_object()
+        username = user.username
+        user.delete()
+        return Response({'status': 'rejected', 'username': username})
+
+
 from .serializers import ContactRequestSerializer
 from media_manager.models import ContactRequest
 from rest_framework.permissions import IsAuthenticated
@@ -124,6 +162,16 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+class IsAdminOrEditors(permissions.BasePermission):
+    """Allow access to admin/staff users or members of the Editors group."""
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if request.user.is_staff:
+            return True
+        return request.user.groups.filter(name='Editors').exists()
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ContactRequestViewSet(viewsets.ModelViewSet):
@@ -146,12 +194,12 @@ class ContactRequestViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        # For other actions require admin
-        return [IsAdminUser()]
+        # For other actions require admin or Editors group
+        return [IsAdminOrEditors()]
 
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrEditors])
     def stats(self, request):
         """Return basic stats for admin UI: number of unhandled requests."""
         unhandled = ContactRequest.objects.filter(handled=False).count()

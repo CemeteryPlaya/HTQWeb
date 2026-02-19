@@ -84,8 +84,8 @@ const MyProfile = () => {
         navigate('/login');
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error loading profile</div>;
+    if (isLoading) return <div className="min-h-screen flex items-center justify-center">{t('profile.loading')}</div>;
+    if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{t('profile.error')}</div>;
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -109,23 +109,15 @@ const MyProfile = () => {
                                 <div className="mt-4 text-center">
                                     <h3 className="font-bold text-lg">{profile.display_name}</h3>
                                     <p className="text-sm text-muted-foreground">{profile.email}</p>
-                                    <p className="text-sm text-muted-foreground mt-2">Roles: {profile.roles?.join(', ') || 'none'}</p>
-                                    <p className="text-sm text-muted-foreground">Staff: {profile.user?.is_staff ? 'yes' : (profile.roles?.includes('staff') ? 'yes' : 'no')}</p>
+                                    <p className="text-sm text-muted-foreground mt-2">{t('profile.rolesLabel')}: {profile.roles?.join(', ') || t('profile.rolesNone')}</p>
+                                    <p className="text-sm text-muted-foreground">{t('profile.staffLabel')}: {profile.user?.is_staff ? t('profile.yes') : (profile.roles?.includes('staff') ? t('profile.yes') : t('profile.no'))}</p>
                                     <button onClick={handleLogout} className="mt-4 inline-block w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
-                                        {t('auth.logout') || 'Logout'}
+                                        {t('profile.logout')}
                                     </button>
                                 </div>
                             </div>
 
                             <ProfileHeader profile={profile} />
-                            <div className="bg-card rounded-lg border p-6">
-                                <h3 className="text-xl font-semibold mb-4">{t('profile.edit')}</h3>
-                                <ProfileForm
-                                    profile={profile}
-                                    onSubmit={handleFormSubmit}
-                                    isLoading={updateProfileMutation.isPending}
-                                />
-                            </div>
                         </div>
                     </div>
                 )}

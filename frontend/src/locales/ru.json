@@ -121,7 +121,7 @@
                 "address": "Казахстан, г. Тараз, мкрн. Акбулак, ул. Таразова, 9А"
             },
             "office2": {
-                "name": "Рыба: Название офиса 2",
+                    "fullName": "ФИО",
                 "address": "Рыба: г. Город, ул. Улица, д. 10А"
             },
             "office3": {
@@ -338,6 +338,37 @@
         "updated": "Профиль успешно обновлен",
         "saving": "Сохранение...",
         "changeAvatar": "Сменить аватар",
+        "loading": "Загрузка...",
+        "error": "Ошибка загрузки профиля",
+        "rolesLabel": "Роли",
+        "rolesNone": "нет",
+        "staffLabel": "Сотрудник",
+        "yes": "да",
+        "no": "нет",
+        "logout": "Выйти",
+        "sidebar": {
+            "account": "Аккаунт",
+            "myProfile": "Мой профиль",
+            "settings": "Настройки",
+            "editor": "Редактор",
+            "manageNews": "Управление новостями",
+            "manageProjects": "Управление проектами",
+            "contactRequests": "Запросы контактов",
+            "djangoAdmin": "Django админ",
+            "hrManagement": "HR управление",
+            "adminTools": "Инструменты администратора",
+            "employees": "Сотрудники",
+            "departments": "Отделы",
+            "positions": "Должности",
+            "timeTracking": "Учет времени",
+            "vacancies": "Вакансии",
+            "applications": "Заявки",
+            "documents": "Документы",
+            "profiles": "Профили пользователей",
+            "history": "Кадровая история",
+            "actionLogs": "Журнал действий",
+            "registrations": "Регистрации"
+        },
         "errors": {
             "nameMin": "Имя должно содержать минимум 2 символа"
         }
@@ -347,7 +378,7 @@
         "registering": "Регистрация...",
         "login": "Вход",
         "signIn": "Вход в систему",
-        "username": "Имя пользователя",
+    "fullName": "ФИО",
         "email": "Email",
         "password": "Пароль",
         "confirmPassword": "Подтвердите пароль",
@@ -356,9 +387,10 @@
         "registerHere": "Зарегистрироваться",
         "loginHere": "Войти",
         "success": "Регистрация успешна! Пожалуйста, войдите.",
+        "pendingApproval": "Регистрация отправлена! Администратор рассмотрит вашу заявку.",
         "failed": "Ошибка регистрации",
         "errors": {
-            "usernameMin": "Имя пользователя должно содержать минимум 3 символа",
+            "fullNameMin": "ФИО должно содержать минимум 3 символа",
             "emailInvalid": "Некорректный email адрес",
             "passwordMin": "Пароль должен содержать минимум 6 символов",
             "passwordMatch": "Пароли не совпадают"
@@ -378,6 +410,373 @@
             "inactive": "Неактивен",
             "admin": "Админ",
             "user": "Пользователь"
+        },
+        "registrations": {
+            "title": "Ожидающие регистрации",
+            "pending": "ожидают",
+            "noPending": "Нет ожидающих регистраций.",
+            "username": "Имя пользователя",
+            "emailCol": "Email",
+            "registered": "Дата регистрации",
+            "actions": "Действия",
+            "approve": "Одобрить",
+            "reject": "Отклонить",
+            "approved": "Пользователь одобрен.",
+            "rejected": "Регистрация отклонена."
+        }
+    },
+    "hr": {
+        "title": "HR Management",
+        "navigation": "Навигация",
+        "backToMain": "Назад в профиль",
+        "nav": {
+            "employees": "Сотрудники",
+            "departments": "Отделы",
+            "positions": "Должности",
+            "timeTracking": "Учет времени",
+            "vacancies": "Вакансии",
+            "applications": "Заявки",
+            "documents": "Документы",
+            "history": "Кадровая история",
+            "profiles": "Профили",
+            "logs": "Журнал действий"
+        },
+        "common": {
+            "loading": "Загрузка...",
+            "total": "Всего",
+            "actions": "Действия",
+            "cancel": "Отмена",
+            "save": "Сохранить",
+            "saving": "Сохранение...",
+            "edit": "Редактировать",
+            "delete": "Удалить",
+            "add": "Добавить",
+            "create": "Создать",
+            "upload": "Загрузить",
+            "approve": "Одобрить",
+            "reject": "Отклонить",
+            "download": "Скачать",
+            "unknownError": "Неизвестная ошибка",
+            "select": "Выбрать",
+            "noDepartment": "Без отдела",
+            "noPosition": "Без должности"
+        },
+        "pages": {
+            "employees": {
+                "title": "Сотрудники",
+                "subtitle": "Активные сотрудники, роли и контактные данные.",
+                "error": "Ошибка загрузки сотрудников",
+                "add": "Добавить сотрудника",
+                "new": "Новый сотрудник",
+                "edit": "Редактировать сотрудника",
+                "deleteConfirm": "Удалить этого сотрудника?",
+                "fields": {
+                    "user": "Пользователь",
+                    "status": "Статус",
+                    "position": "Должность",
+                    "department": "Отдел",
+                    "phone": "Телефон",
+                    "dateHired": "Дата приема",
+                    "dateDismissed": "Дата увольнения",
+                    "notes": "Заметки"
+                },
+                "placeholders": {
+                    "selectUser": "Выберите пользователя",
+                    "selectStatus": "Выберите статус",
+                    "selectPosition": "Выберите должность",
+                    "selectDepartment": "Выберите отдел"
+                },
+                "status": {
+                    "active": "Активен",
+                    "onLeave": "В отпуске",
+                    "dismissed": "Уволен"
+                },
+                "table": {
+                    "name": "Имя",
+                    "email": "Email",
+                    "position": "Должность",
+                    "department": "Отдел",
+                    "phone": "Телефон",
+                    "status": "Статус",
+                    "hired": "Принят",
+                    "actions": "Действия"
+                }
+            },
+            "departments": {
+                "title": "Отделы",
+                "subtitle": "Команды, структура и организационные единицы.",
+                "error": "Ошибка загрузки отделов",
+                "create": "Создать отдел",
+                "new": "Новый отдел",
+                "edit": "Редактировать отдел",
+                "deleteConfirm": "Удалить этот отдел?",
+                "searchPlaceholder": "Поиск по названию...",
+                "fields": {
+                    "name": "Название",
+                    "description": "Описание"
+                },
+                "table": {
+                    "name": "Название",
+                    "description": "Описание",
+                    "created": "Создан",
+                    "actions": "Действия"
+                }
+            },
+            "positions": {
+                "title": "Должности",
+                "subtitle": "Должности и привязка к отделам.",
+                "error": "Ошибка загрузки должностей",
+                "create": "Создать должность",
+                "new": "Новая должность",
+                "edit": "Редактировать должность",
+                "deleteConfirm": "Удалить эту должность?",
+                "filters": {
+                    "department": "Фильтр по отделу",
+                    "allDepartments": "Все отделы"
+                },
+                "fields": {
+                    "title": "Название",
+                    "department": "Отдел"
+                },
+                "placeholders": {
+                    "selectDepartment": "Выберите отдел"
+                },
+                "table": {
+                    "positionTitle": "Должность",
+                    "department": "Отдел",
+                    "actions": "Действия"
+                }
+            },
+            "timeTracking": {
+                "title": "Учет времени",
+                "subtitle": "Отпуска, одобрения и статус присутствия.",
+                "error": "Ошибка загрузки учета времени",
+                "add": "Добавить запись",
+                "new": "Новая запись",
+                "edit": "Редактировать запись",
+                "deleteConfirm": "Удалить эту запись?",
+                "fields": {
+                    "employee": "Сотрудник",
+                    "leaveType": "Тип",
+                    "status": "Статус",
+                    "startDate": "Дата начала",
+                    "endDate": "Дата окончания",
+                    "comment": "Комментарий"
+                },
+                "placeholders": {
+                    "selectEmployee": "Выберите сотрудника",
+                    "selectType": "Выберите тип",
+                    "selectStatus": "Выберите статус"
+                },
+                "leaveTypes": {
+                    "vacation": "Отпуск",
+                    "sickLeave": "Больничный",
+                    "dayOff": "Отгул",
+                    "businessTrip": "Командировка",
+                    "unpaid": "За свой счет"
+                },
+                "status": {
+                    "pending": "На рассмотрении",
+                    "approved": "Одобрен",
+                    "rejected": "Отклонен",
+                    "cancelled": "Отменен"
+                },
+                "table": {
+                    "employee": "Сотрудник",
+                    "type": "Тип",
+                    "period": "Период",
+                    "days": "Дней",
+                    "status": "Статус",
+                    "approvedBy": "Одобрил",
+                    "actions": "Действия"
+                }
+            },
+            "vacancies": {
+                "title": "Вакансии",
+                "subtitle": "Открытые роли, вилки зарплат и активность кандидатов.",
+                "error": "Ошибка загрузки вакансий",
+                "create": "Создать вакансию",
+                "new": "Новая вакансия",
+                "edit": "Редактировать вакансию",
+                "deleteConfirm": "Удалить эту вакансию?",
+                "fields": {
+                    "title": "Название",
+                    "department": "Отдел",
+                    "status": "Статус",
+                    "salaryMin": "Зарплата от",
+                    "salaryMax": "Зарплата до",
+                    "description": "Описание",
+                    "requirements": "Требования"
+                },
+                "placeholders": {
+                    "selectDepartment": "Выберите отдел",
+                    "selectStatus": "Выберите статус"
+                },
+                "status": {
+                    "open": "Открыта",
+                    "closed": "Закрыта",
+                    "onHold": "На удержании"
+                },
+                "salaryRange": "$ {{min}} - $ {{max}}",
+                "table": {
+                    "title": "Название",
+                    "department": "Отдел",
+                    "status": "Статус",
+                    "salaryRange": "Вилка зарплаты",
+                    "applications": "Заявки",
+                    "created": "Создана",
+                    "actions": "Действия"
+                }
+            },
+            "applications": {
+                "title": "Заявки",
+                "subtitle": "Отклики кандидатов и статус найма.",
+                "error": "Ошибка загрузки заявок",
+                "add": "Добавить заявку",
+                "new": "Новая заявка",
+                "edit": "Редактировать заявку",
+                "deleteConfirm": "Удалить эту заявку?",
+                "fields": {
+                    "vacancy": "Вакансия",
+                    "firstName": "Имя",
+                    "lastName": "Фамилия",
+                    "email": "Email",
+                    "phone": "Телефон",
+                    "status": "Статус",
+                    "coverLetter": "Сопроводительное письмо",
+                    "notes": "Заметки",
+                    "resume": "Резюме (PDF)"
+                },
+                "placeholders": {
+                    "selectVacancy": "Выберите вакансию",
+                    "selectStatus": "Выберите статус"
+                },
+                "status": {
+                    "new": "Новая",
+                    "reviewed": "Рассмотрена",
+                    "interview": "Интервью",
+                    "offered": "Оффер",
+                    "rejected": "Отклонена",
+                    "hired": "Принят"
+                },
+                "table": {
+                    "applicant": "Кандидат",
+                    "email": "Email",
+                    "phone": "Телефон",
+                    "vacancy": "Вакансия",
+                    "status": "Статус",
+                    "applied": "Дата",
+                    "actions": "Действия"
+                }
+            },
+            "documents": {
+                "title": "Документы",
+                "subtitle": "Файлы сотрудников, договоры и HR записи.",
+                "error": "Ошибка загрузки документов",
+                "upload": "Загрузить документ",
+                "new": "Новый документ",
+                "edit": "Редактировать документ",
+                "deleteConfirm": "Удалить этот документ?",
+                "fields": {
+                    "employee": "Сотрудник",
+                    "title": "Название",
+                    "type": "Тип",
+                    "description": "Описание",
+                    "file": "Файл"
+                },
+                "placeholders": {
+                    "selectEmployee": "Выберите сотрудника",
+                    "selectType": "Выберите тип"
+                },
+                "docTypes": {
+                    "contract": "Трудовой договор",
+                    "amendment": "Допсоглашение",
+                    "order": "Приказ",
+                    "certificate": "Справка",
+                    "other": "Другое"
+                },
+                "table": {
+                    "employee": "Сотрудник",
+                    "document": "Документ",
+                    "type": "Тип",
+                    "uploadedBy": "Загрузил",
+                    "date": "Дата",
+                    "actions": "Действия"
+                }
+            },
+            "logs": {
+                "title": "Журнал действий",
+                "subtitle": "Аудит всех действий пользователей.",
+                "error": "Ошибка загрузки журнала действий",
+                "allModules": "Все модули",
+                "modules": {
+                    "news": "Новости",
+                    "profile": "Профиль",
+                    "contacts": "Обращения",
+                    "auth": "Авторизация",
+                    "admin": "Администрирование"
+                },
+                "table": {
+                    "time": "Время",
+                    "user": "Пользователь",
+                    "module": "Модуль",
+                    "action": "Действие",
+                    "target": "Объект",
+                    "details": "Детали",
+                    "ip": "IP"
+                }
+            },
+            "profiles": {
+                "title": "Профили пользователей",
+                "name": "Имя",
+                "email": "Email",
+                "displayName": "Отображаемое имя",
+                "roles": "Роли",
+                "language": "Язык",
+                "timezone": "Часовой пояс",
+                "bio": "О себе",
+                "editProfile": "Редактировать профиль",
+                "userInfo": "Информация о пользователе"
+            },
+            "history": {
+                "title": "Кадровая история",
+                "subtitle": "Приём, увольнения, перемещения и повышения сотрудников.",
+                "error": "Ошибка загрузки истории",
+                "create": "Новая запись",
+                "new": "Новая запись истории",
+                "edit": "Редактировать запись",
+                "deleteConfirm": "Удалить эту запись?",
+                "fields": {
+                    "employee": "Сотрудник",
+                    "eventType": "Тип события",
+                    "eventDate": "Дата события",
+                    "fromDepartment": "Из отдела",
+                    "toDepartment": "В отдел",
+                    "fromPosition": "Из должности",
+                    "toPosition": "В должность",
+                    "orderNumber": "Номер приказа",
+                    "comment": "Комментарий"
+                },
+                "placeholders": {
+                    "selectEmployee": "Выберите сотрудника"
+                },
+                "eventTypes": {
+                    "hired": "Приём",
+                    "dismissed": "Увольнение",
+                    "transfer": "Перемещение",
+                    "promotion": "Повышение",
+                    "demotion": "Понижение",
+                    "other": "Другое"
+                },
+                "table": {
+                    "date": "Дата",
+                    "employee": "Сотрудник",
+                    "eventType": "Событие",
+                    "details": "Подробности",
+                    "orderNumber": "№ приказа",
+                    "actions": "Действия"
+                }
+            }
         }
     }
 }

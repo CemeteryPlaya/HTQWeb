@@ -74,7 +74,10 @@ function createApiClientInstance(base) {
     client.interceptors.response.use(
         response => response,
         async error => {
-            if (error.response?.status === 401 && !error.config._retry) {
+            const url = error.config?.url || '';
+            // Don't try to refresh for auth endpoints themselves
+            const isAuthEndpoint = url.includes('token/') || url.includes('register/');
+            if (error.response?.status === 401 && !error.config._retry && !isAuthEndpoint) {
                 error.config._retry = true;
                 try {
                     const refresh = localStorage.getItem('refresh');

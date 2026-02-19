@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 
 from .models import (
     Department, Position, Employee, Vacancy, Application,
-    TimeTracking, Document, HRActionLog,
+    TimeTracking, Document, HRActionLog, PersonnelHistory,
 )
 
 User = get_user_model()
@@ -152,6 +152,38 @@ class DocumentSerializer(serializers.ModelSerializer):
         return None
 
 
+class PersonnelHistorySerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    from_department_name = serializers.CharField(source='from_department.name', read_only=True)
+    to_department_name = serializers.CharField(source='to_department.name', read_only=True)
+    from_position_title = serializers.CharField(source='from_position.title', read_only=True)
+    to_position_title = serializers.CharField(source='to_position.title', read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonnelHistory
+        fields = [
+            'id', 'employee', 'employee_name',
+            'event_type', 'event_date',
+            'from_department', 'from_department_name',
+            'to_department', 'to_department_name',
+            'from_position', 'from_position_title',
+            'to_position', 'to_position_title',
+            'order_number', 'comment',
+            'created_by', 'created_by_name',
+            'created_at',
+        ]
+        read_only_fields = ['created_by', 'created_at']
+
+    def get_employee_name(self, obj):
+        return obj.employee.user.get_full_name() or obj.employee.user.username
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.username
+        return None
+
+
 class HRActionLogSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
     employee_name = serializers.SerializerMethodField()
@@ -166,7 +198,7 @@ class HRActionLogSerializer(serializers.ModelSerializer):
             'department', 'department_name',
             'position', 'position_title',
             'action', 'target_type', 'target_id', 'target_repr',
-            'details', 'ip_address', 'created_at',
+            'details', 'ip_address', 'url', 'module', 'created_at',
         ]
 
     def get_user_name(self, obj):

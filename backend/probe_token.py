@@ -18,7 +18,7 @@ def probe_token():
     
     print("Probing /api/token/ with invalid credentials to see if it even responds (should be 401, not 500)...")
     try:
-        response = client.post('/api/token/', {'username': 'Admin55', 'password': 'wrongpassword'})
+        response = client.post('/api/token/', {'email': 'admin55@example.com', 'password': 'wrongpassword'})
         print(f"Status: {response.status_code}")
         print(f"Data: {response.data}")
     except Exception as e:

@@ -75,12 +75,6 @@ const AdminContacts = () => {
             {profileError && (
               <p className="mt-2 text-sm text-red-400">Failed to fetch profile: {(profileError as any)?.response?.status}</p>
             )}
-            {profile && (
-              <div className="mt-8 text-left mx-auto max-w-md p-4 bg-card rounded border">
-                <h3 className="font-semibold mb-2">Authenticated Profile</h3>
-                <pre className="text-[10px] overflow-auto max-h-40">{JSON.stringify(profile, null, 2)}</pre>
-              </div>
-            )}
           </div>
         </main>
         <Footer />
@@ -89,8 +83,6 @@ const AdminContacts = () => {
   }
 
 
-  console.log('AdminContacts contacts:', contacts);
-  console.log('AdminContacts profile:', profile);
 
   if (!isLoading && !contacts) {
     return (
@@ -115,12 +107,6 @@ const AdminContacts = () => {
           <h1 className="text-3xl font-bold mb-6">Contact Requests</h1>
           <div className="bg-card rounded-lg border p-6">
             <p className="text-muted-foreground">No contact requests found.</p>
-            {profile && (
-              <div className="mt-4 text-xs text-muted-foreground">
-                <strong>Profile:</strong>
-                <pre className="whitespace-pre-wrap">{JSON.stringify(profile, null, 2)}</pre>
-              </div>
-            )}
           </div>
         </main>
         <Footer />
@@ -150,7 +136,11 @@ const AdminContacts = () => {
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.first_name} {c.last_name}</TableCell>
                   <TableCell>{c.email}</TableCell>
-                  <TableCell className="max-w-xl truncate">{c.message}</TableCell>
+                  <TableCell className="max-w-xl">
+                    <div className="text-sm text-foreground whitespace-pre-wrap break-words">
+                      {c.message}
+                    </div>
+                  </TableCell>
                   <TableCell>{new Date(c.created_at).toLocaleString()}</TableCell>
                   <TableCell>{c.handled ? 'Yes' : 'No'}</TableCell>
                   <TableCell>

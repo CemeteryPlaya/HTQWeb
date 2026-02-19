@@ -9,14 +9,14 @@ from rest_framework.response import Response
 
 from .models import (
     Department, Position, Employee, Vacancy, Application,
-    TimeTracking, Document, HRActionLog,
+    TimeTracking, Document, HRActionLog, PersonnelHistory,
 )
 from .serializers import (
     DepartmentSerializer, PositionSerializer,
     EmployeeListSerializer, EmployeeDetailSerializer,
     VacancySerializer, ApplicationSerializer,
     TimeTrackingSerializer, DocumentSerializer,
-    HRActionLogSerializer,
+    HRActionLogSerializer, PersonnelHistorySerializer,
 )
 from .permissions import IsHRManagerOrSuperuser
 from .logging import log_action
@@ -460,6 +460,7 @@ class HRActionLogViewSet(viewsets.ReadOnlyModelViewSet):
         # Фильтры
         action_type = self.request.query_params.get('action')
         target_type = self.request.query_params.get('target_type')
+        module = self.request.query_params.get('module')
         user_id = self.request.query_params.get('user')
         employee_id = self.request.query_params.get('employee')
         department_id = self.request.query_params.get('department')
@@ -469,6 +470,8 @@ class HRActionLogViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(action=action_type)
         if target_type:
             qs = qs.filter(target_type=target_type)
+        if module:
+            qs = qs.filter(module=module)
         if user_id:
             qs = qs.filter(user_id=user_id)
         if employee_id:
@@ -482,4 +485,31 @@ class HRActionLogViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(target_repr__icontains=search)
                 | Q(details__icontains=search)
             )
-        return qs[:200]  # Ограничение — последние 200 записей
+        return qs[:500]  # Ограничение — последние 500 записей
+
+
+class PersonnelHistoryViewSet(LoggingMixin, viewsets.ModelViewSet):
+    """Кадровая история сотрудников."""
+    permission_classes = [IsHRManagerOrSuperuser]
+    serializer_class = PersonnelHistorySerializer
+    pagination_class = None
+    log_target_type = HRActionLog.TargetType.EMPLOYEE
+
+    def get_queryset(self):
+        qs = PersonnelHistory.objects.select_related(
+            'employee__user', 'from_department', 'to_department',
+            'from_position', 'to_position', 'created_by',
+        ).order_by('-event_date', '-created_at')
+        employee_id = self.request.query_params.get('employee')
+        event_type = self.request.query_params.get('event_type')
+        if employee_id:
+            qs = qs.filter(employee_id=employee_id)
+        if event_type:
+            qs = qs.filter(event_type=event_type)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save()

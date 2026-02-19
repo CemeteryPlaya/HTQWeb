@@ -3,59 +3,114 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { Users, Briefcase, FileText, Clock, ArrowLeft, Building2 } from 'lucide-react';
-
+import {
+  Users,
+  Building2,
+  Briefcase,
+  FileText,
+  Clock,
+  ClipboardList,
+  ShieldCheck,
+  ArrowLeft,
+  UserCircle,
+  History,
+} from 'lucide-react';
 const navItems = [
-  { to: '/manage/hr/employees', icon: Users, labelKey: 'hr.nav.employees' },
-  { to: '/manage/hr/directory', icon: Building2, labelKey: 'hr.nav.directory' },
-  { to: '/manage/hr/recruitment', icon: Briefcase, labelKey: 'hr.nav.recruitment' },
-  { to: '/manage/hr/documents', icon: FileText, labelKey: 'hr.nav.documents' },
-  { to: '/manage/hr/time-tracking', icon: Clock, labelKey: 'hr.nav.timeTracking' },
+  { to: '/hr/employees', icon: Users, labelKey: 'hr.nav.employees' },
+  { to: '/hr/departments', icon: Building2, labelKey: 'hr.nav.departments' },
+  { to: '/hr/positions', icon: Briefcase, labelKey: 'hr.nav.positions' },
+  { to: '/hr/time-tracking', icon: Clock, labelKey: 'hr.nav.timeTracking' },
+  { to: '/hr/vacancies', icon: ClipboardList, labelKey: 'hr.nav.vacancies' },
+  { to: '/hr/applications', icon: ShieldCheck, labelKey: 'hr.nav.applications' },
+  { to: '/hr/documents', icon: FileText, labelKey: 'hr.nav.documents' },
+  { to: '/hr/history', icon: History, labelKey: 'hr.nav.history' },
+  { to: '/hr/profiles', icon: UserCircle, labelKey: 'hr.nav.profiles' },
 ];
 
 interface Props {
+  title: string;
+  subtitle?: string;
   children: React.ReactNode;
 }
 
-export const HRLayout: React.FC<Props> = ({ children }) => {
+export const HRLayout: React.FC<Props> = ({ title, subtitle, children }) => {
   const { t } = useTranslation();
   const location = useLocation();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Back to main page */}
-        <Link
-          to="/myprofile"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t('hr.backToMain')}
-        </Link>
+      <main className="flex-1">
+        <div className="container-custom py-8">
+          <div className="mb-6 flex flex-col gap-4">
+            <Link
+              to="/myprofile"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('hr.backToMain')}
+            </Link>
 
-        {/* Sub-navigation */}
-        <nav className="flex items-center gap-1 mb-6 overflow-x-auto pb-2 border-b">
-          {navItems.map((item) => {
-            const active = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
-        </nav>
+            <div>
+              <div className="text-sm uppercase tracking-[0.3em] text-muted-foreground">{t('hr.title')}</div>
+              <h1 className="font-display text-3xl font-semibold text-foreground">{title}</h1>
+              {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+            </div>
+          </div>
 
-        {children}
+          <div className="mb-6 flex items-center gap-2 overflow-x-auto rounded-xl border bg-card/70 p-2 shadow-[var(--shadow-soft)] lg:hidden">
+            {navItems.map((item) => {
+              const active = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+            <aside className="hidden lg:block">
+              <div className="rounded-2xl border bg-card/70 p-4 shadow-[var(--shadow-soft)]">
+                <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3">
+                  {t('hr.navigation')}
+                </div>
+                <nav className="flex flex-col gap-2">
+                  {navItems.map((item) => {
+                    const active = location.pathname === item.to;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                          active
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {t(item.labelKey)}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </aside>
+
+            <div className="space-y-6">
+              {children}
+            </div>
+          </div>
+        </div>
       </main>
       <Footer />
     </div>

@@ -4,14 +4,14 @@ import api from '../api/client';
 
 function LoginForm({ onLogin }) {
     const { t } = useTranslation();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
     const login = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.post('token/', { username, password });
+            const res = await api.post('token/', { email, password });
             localStorage.setItem('access', res.data.access);
             localStorage.setItem('refresh', res.data.refresh);
 
@@ -39,12 +39,13 @@ function LoginForm({ onLogin }) {
             <h2 className="text-xl mb-4">{t('auth.login')}</h2>
             {error && <p className="text-red-500 mb-2">{error}</p>}
             <div className="mb-4">
-                <label className="block mb-1">{t('auth.username')}</label>
+                <label className="block mb-1">{t('auth.email')}</label>
                 <input
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-2 border rounded"
+                    placeholder="email@example.com"
                 />
             </div>
             <div className="mb-4">

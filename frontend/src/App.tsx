@@ -28,6 +28,9 @@ import HRVacancies from "./pages/hr/HRVacancies";
 import HRApplications from "./pages/hr/HRApplications";
 import HRDocuments from "./pages/hr/HRDocuments";
 import HRLogs from "./pages/hr/HRLogs";
+import HRProfiles from "./pages/hr/HRProfiles";
+import HRHistory from "./pages/hr/HRHistory";
+import AdminRegistrations from "./pages/AdminRegistrations";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +151,21 @@ const App = () => (
               <Route path="/hr/logs" element={
                 <RequireAuth>
                   <HRLogs />
+                </RequireAuth>
+              } />
+              <Route path="/hr/profiles" element={
+                <RequireAuth>
+                  <HRProfiles />
+                </RequireAuth>
+              } />
+              <Route path="/hr/history" element={
+                <RequireAuth>
+                  <HRHistory />
+                </RequireAuth>
+              } />
+              <Route path="/admin/registrations" element={
+                <RequireAuth>
+                  <AdminRegistrations />
                 </RequireAuth>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

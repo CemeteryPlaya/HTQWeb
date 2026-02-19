@@ -300,8 +300,85 @@ class Document(models.Model):
         return f'{self.title} — {self.employee}'
 
 
+class PersonnelHistory(models.Model):
+    """Кадровая история — записи о приёме, увольнении, перемещениях сотрудников."""
+
+    class EventType(models.TextChoices):
+        HIRED = 'hired', 'Приём на работу'
+        DISMISSED = 'dismissed', 'Увольнение'
+        TRANSFER = 'transfer', 'Перемещение'
+        PROMOTION = 'promotion', 'Повышение'
+        DEMOTION = 'demotion', 'Понижение'
+        OTHER = 'other', 'Другое'
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='personnel_history',
+        verbose_name='Сотрудник',
+    )
+    event_type = models.CharField(
+        'Тип события',
+        max_length=20,
+        choices=EventType.choices,
+        db_index=True,
+    )
+    event_date = models.DateField('Дата события')
+    from_department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='history_from',
+        verbose_name='Из отдела',
+    )
+    to_department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='history_to',
+        verbose_name='В отдел',
+    )
+    from_position = models.ForeignKey(
+        Position,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='history_from',
+        verbose_name='Из должности',
+    )
+    to_position = models.ForeignKey(
+        Position,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='history_to',
+        verbose_name='В должность',
+    )
+    order_number = models.CharField('Номер приказа', max_length=100, blank=True)
+    comment = models.TextField('Комментарий', blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_personnel_history',
+        verbose_name='Создал',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Кадровая история'
+        verbose_name_plural = 'Кадровая история'
+        ordering = ['-event_date', '-created_at']
+
+    def __str__(self):
+        return f'{self.get_event_type_display()} — {self.employee}'
+
+
 class HRActionLog(models.Model):
-    """Журнал действий пользователей в HR-модуле."""
+    """Журнал действий всех пользователей."""
 
     class ActionType(models.TextChoices):
         CREATE = 'create', 'Создание'
@@ -310,6 +387,11 @@ class HRActionLog(models.Model):
         APPROVE = 'approve', 'Одобрение'
         REJECT = 'reject', 'Отклонение'
         STATUS_CHANGE = 'status_change', 'Смена статуса'
+        LOGIN = 'login', 'Вход'
+        LOGOUT = 'logout', 'Выход'
+        VIEW = 'view', 'Просмотр'
+        UPLOAD = 'upload', 'Загрузка'
+        OTHER = 'other', 'Другое'
 
     class TargetType(models.TextChoices):
         EMPLOYEE = 'employee', 'Сотрудник'
@@ -319,6 +401,22 @@ class HRActionLog(models.Model):
         APPLICATION = 'application', 'Отклик'
         TIME_TRACKING = 'time_tracking', 'Учёт времени'
         DOCUMENT = 'document', 'Документ'
+        # General types
+        NEWS = 'news', 'Новость'
+        PROFILE = 'profile', 'Профиль'
+        CONTACT_REQUEST = 'contact_request', 'Обращение'
+        USER = 'user', 'Пользователь'
+        AUTH = 'auth', 'Авторизация'
+        OTHER = 'other', 'Другое'
+
+    class Module(models.TextChoices):
+        HR = 'hr', 'HR'
+        NEWS = 'news', 'Новости'
+        PROFILE = 'profile', 'Профиль'
+        CONTACTS = 'contacts', 'Обращения'
+        AUTH = 'auth', 'Авторизация'
+        ADMIN = 'admin', 'Администрирование'
+        OTHER = 'other', 'Другое'
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -368,11 +466,19 @@ class HRActionLog(models.Model):
     target_repr = models.CharField('Описание объекта', max_length=500, blank=True)
     details = models.TextField('Детали', blank=True)
     ip_address = models.GenericIPAddressField('IP-адрес', null=True, blank=True)
+    url = models.CharField('URL', max_length=500, blank=True, default='')
+    module = models.CharField(
+        'Модуль',
+        max_length=30,
+        choices=Module.choices,
+        default=Module.OTHER,
+        db_index=True,
+    )
     created_at = models.DateTimeField('Дата/время', auto_now_add=True, db_index=True)
 
     class Meta:
-        verbose_name = 'Журнал действий HR'
-        verbose_name_plural = 'Журнал действий HR'
+        verbose_name = 'Журнал действий'
+        verbose_name_plural = 'Журнал действий'
         ordering = ['-created_at']
 
     def __str__(self):

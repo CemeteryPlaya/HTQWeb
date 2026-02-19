@@ -14,6 +14,37 @@
         "updated": "Profile updated successfully",
         "saving": "Saving...",
         "changeAvatar": "Change Avatar",
+        "loading": "Loading...",
+        "error": "Error loading profile",
+        "rolesLabel": "Roles",
+        "rolesNone": "none",
+        "staffLabel": "Staff",
+        "yes": "yes",
+        "no": "no",
+        "logout": "Logout",
+        "sidebar": {
+            "account": "Account",
+            "myProfile": "My profile",
+            "settings": "Settings",
+            "editor": "Editor",
+            "manageNews": "Manage News",
+            "manageProjects": "Manage Projects",
+            "contactRequests": "Contact Requests",
+            "djangoAdmin": "Django admin",
+            "hrManagement": "HR Management",
+            "adminTools": "Admin tools",
+            "employees": "Employees",
+            "departments": "Departments",
+            "positions": "Positions",
+            "timeTracking": "Time Tracking",
+            "vacancies": "Vacancies",
+            "applications": "Applications",
+            "documents": "Documents",
+            "profiles": "User Profiles",
+            "history": "Personnel History",
+            "actionLogs": "Action Logs",
+            "registrations": "Registrations"
+        },
         "errors": {
             "nameMin": "Name must be at least 2 characters"
         }
@@ -341,5 +372,397 @@
         "rights": "All rights reserved.",
         "privacy": "Privacy Policy",
         "terms": "Terms of Service"
+    },
+    "hr": {
+        "title": "HR Management",
+        "navigation": "Navigation",
+        "backToMain": "Back to profile",
+        "nav": {
+            "employees": "Employees",
+            "departments": "Departments",
+            "positions": "Positions",
+            "timeTracking": "Time Tracking",
+            "vacancies": "Vacancies",
+            "applications": "Applications",
+            "documents": "Documents",
+            "history": "History",
+            "profiles": "Profiles",
+            "logs": "Action Logs"
+        },
+        "common": {
+            "loading": "Loading...",
+            "total": "Total",
+            "actions": "Actions",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving...",
+            "edit": "Edit",
+            "delete": "Delete",
+            "add": "Add",
+            "create": "Create",
+            "upload": "Upload",
+            "approve": "Approve",
+            "reject": "Reject",
+            "download": "Download",
+            "unknownError": "Unknown error",
+            "select": "Select",
+            "noDepartment": "No department",
+            "noPosition": "No position"
+        },
+        "pages": {
+            "employees": {
+                "title": "Employees",
+                "subtitle": "Active team members, roles, and contact details.",
+                "error": "Error loading employees",
+                "add": "Add Employee",
+                "new": "New Employee",
+                "edit": "Edit Employee",
+                "deleteConfirm": "Delete this employee?",
+                "fields": {
+                    "user": "User",
+                    "status": "Status",
+                    "position": "Position",
+                    "department": "Department",
+                    "phone": "Phone",
+                    "dateHired": "Date hired",
+                    "dateDismissed": "Date dismissed",
+                    "notes": "Notes"
+                },
+                "placeholders": {
+                    "selectUser": "Select user",
+                    "selectStatus": "Select status",
+                    "selectPosition": "Select position",
+                    "selectDepartment": "Select department"
+                },
+                "status": {
+                    "active": "Active",
+                    "onLeave": "On leave",
+                    "dismissed": "Dismissed"
+                },
+                "table": {
+                    "name": "Name",
+                    "email": "Email",
+                    "position": "Position",
+                    "department": "Department",
+                    "phone": "Phone",
+                    "status": "Status",
+                    "hired": "Hired",
+                    "actions": "Actions"
+                }
+            },
+            "departments": {
+                "title": "Departments",
+                "subtitle": "Teams, structure, and organization units.",
+                "error": "Error loading departments",
+                "create": "Create Department",
+                "new": "New Department",
+                "edit": "Edit Department",
+                "deleteConfirm": "Delete this department?",
+                "searchPlaceholder": "Search by name...",
+                "fields": {
+                    "name": "Name",
+                    "description": "Description"
+                },
+                "table": {
+                    "name": "Name",
+                    "description": "Description",
+                    "created": "Created",
+                    "actions": "Actions"
+                }
+            },
+            "positions": {
+                "title": "Positions",
+                "subtitle": "Job titles and department alignment.",
+                "error": "Error loading positions",
+                "create": "Create Position",
+                "new": "New Position",
+                "edit": "Edit Position",
+                "deleteConfirm": "Delete this position?",
+                "filters": {
+                    "department": "Filter by department",
+                    "allDepartments": "All departments"
+                },
+                "fields": {
+                    "title": "Title",
+                    "department": "Department"
+                },
+                "placeholders": {
+                    "selectDepartment": "Select department"
+                },
+                "table": {
+                    "positionTitle": "Position Title",
+                    "department": "Department",
+                    "actions": "Actions"
+                }
+            },
+            "timeTracking": {
+                "title": "Time Tracking",
+                "subtitle": "Leave requests, approvals, and attendance status.",
+                "error": "Error loading time tracking",
+                "add": "Add Record",
+                "new": "New Record",
+                "edit": "Edit Record",
+                "deleteConfirm": "Delete this record?",
+                "fields": {
+                    "employee": "Employee",
+                    "leaveType": "Leave type",
+                    "status": "Status",
+                    "startDate": "Start date",
+                    "endDate": "End date",
+                    "comment": "Comment"
+                },
+                "placeholders": {
+                    "selectEmployee": "Select employee",
+                    "selectType": "Select type",
+                    "selectStatus": "Select status"
+                },
+                "leaveTypes": {
+                    "vacation": "Vacation",
+                    "sickLeave": "Sick leave",
+                    "dayOff": "Day off",
+                    "businessTrip": "Business trip",
+                    "unpaid": "Unpaid"
+                },
+                "status": {
+                    "pending": "Pending",
+                    "approved": "Approved",
+                    "rejected": "Rejected",
+                    "cancelled": "Cancelled"
+                },
+                "table": {
+                    "employee": "Employee",
+                    "type": "Type",
+                    "period": "Period",
+                    "days": "Days",
+                    "status": "Status",
+                    "approvedBy": "Approved By",
+                    "actions": "Actions"
+                }
+            },
+            "vacancies": {
+                "title": "Vacancies",
+                "subtitle": "Open roles, salary ranges, and pipeline activity.",
+                "error": "Error loading vacancies",
+                "create": "Create Vacancy",
+                "new": "New Vacancy",
+                "edit": "Edit Vacancy",
+                "deleteConfirm": "Delete this vacancy?",
+                "fields": {
+                    "title": "Title",
+                    "department": "Department",
+                    "status": "Status",
+                    "salaryMin": "Salary Min",
+                    "salaryMax": "Salary Max",
+                    "description": "Description",
+                    "requirements": "Requirements"
+                },
+                "placeholders": {
+                    "selectDepartment": "Select department",
+                    "selectStatus": "Select status"
+                },
+                "status": {
+                    "open": "Open",
+                    "closed": "Closed",
+                    "onHold": "On hold"
+                },
+                "salaryRange": "$ {{min}} - $ {{max}}",
+                "table": {
+                    "title": "Title",
+                    "department": "Department",
+                    "status": "Status",
+                    "salaryRange": "Salary Range",
+                    "applications": "Applications",
+                    "created": "Created",
+                    "actions": "Actions"
+                }
+            },
+            "applications": {
+                "title": "Applications",
+                "subtitle": "Candidate applications and hiring status.",
+                "error": "Error loading applications",
+                "add": "Add Application",
+                "new": "New Application",
+                "edit": "Edit Application",
+                "deleteConfirm": "Delete this application?",
+                "fields": {
+                    "vacancy": "Vacancy",
+                    "firstName": "First name",
+                    "lastName": "Last name",
+                    "email": "Email",
+                    "phone": "Phone",
+                    "status": "Status",
+                    "coverLetter": "Cover letter",
+                    "notes": "Notes",
+                    "resume": "Resume (PDF)"
+                },
+                "placeholders": {
+                    "selectVacancy": "Select vacancy",
+                    "selectStatus": "Select status"
+                },
+                "status": {
+                    "new": "New",
+                    "reviewed": "Reviewed",
+                    "interview": "Interview",
+                    "offered": "Offered",
+                    "rejected": "Rejected",
+                    "hired": "Hired"
+                },
+                "table": {
+                    "applicant": "Applicant",
+                    "email": "Email",
+                    "phone": "Phone",
+                    "vacancy": "Vacancy",
+                    "status": "Status",
+                    "applied": "Applied",
+                    "actions": "Actions"
+                }
+            },
+            "documents": {
+                "title": "Documents",
+                "subtitle": "Employee files, contracts, and HR records.",
+                "error": "Error loading documents",
+                "upload": "Upload Document",
+                "new": "New Document",
+                "edit": "Edit Document",
+                "deleteConfirm": "Delete this document?",
+                "fields": {
+                    "employee": "Employee",
+                    "title": "Title",
+                    "type": "Type",
+                    "description": "Description",
+                    "file": "File"
+                },
+                "placeholders": {
+                    "selectEmployee": "Select employee",
+                    "selectType": "Select type"
+                },
+                "docTypes": {
+                    "contract": "Contract",
+                    "amendment": "Amendment",
+                    "order": "Order",
+                    "certificate": "Certificate",
+                    "other": "Other"
+                },
+                "table": {
+                    "employee": "Employee",
+                    "document": "Document",
+                    "type": "Type",
+                    "uploadedBy": "Uploaded By",
+                    "date": "Date",
+                    "actions": "Actions"
+                }
+            },
+            "logs": {
+                "title": "Action Logs",
+                "subtitle": "Audit trail of all user actions.",
+                "error": "Error loading logs",
+                "allModules": "All modules",
+                "modules": {
+                    "news": "News",
+                    "profile": "Profile",
+                    "contacts": "Contacts",
+                    "auth": "Auth",
+                    "admin": "Admin"
+                },
+                "table": {
+                    "time": "Time",
+                    "user": "User",
+                    "module": "Module",
+                    "action": "Action",
+                    "target": "Target",
+                    "details": "Details",
+                    "ip": "IP"
+                }
+            },
+            "profiles": {
+                "title": "User Profiles",
+                "name": "Name",
+                "email": "Email",
+                "displayName": "Display Name",
+                "roles": "Roles",
+                "language": "Language",
+                "timezone": "Timezone",
+                "bio": "Bio",
+                "editProfile": "Edit Profile",
+                "userInfo": "User Info"
+            },
+            "history": {
+                "title": "Personnel History",
+                "subtitle": "Employee hiring, dismissals, transfers, and promotions.",
+                "error": "Error loading history",
+                "create": "New Record",
+                "new": "New History Record",
+                "edit": "Edit Record",
+                "deleteConfirm": "Delete this record?",
+                "fields": {
+                    "employee": "Employee",
+                    "eventType": "Event Type",
+                    "eventDate": "Event Date",
+                    "fromDepartment": "From Department",
+                    "toDepartment": "To Department",
+                    "fromPosition": "From Position",
+                    "toPosition": "To Position",
+                    "orderNumber": "Order Number",
+                    "comment": "Comment"
+                },
+                "placeholders": {
+                    "selectEmployee": "Select employee"
+                },
+                "eventTypes": {
+                    "hired": "Hired",
+                    "dismissed": "Dismissed",
+                    "transfer": "Transfer",
+                    "promotion": "Promotion",
+                    "demotion": "Demotion",
+                    "other": "Other"
+                },
+                "table": {
+                    "date": "Date",
+                    "employee": "Employee",
+                    "eventType": "Event",
+                    "details": "Details",
+                    "orderNumber": "Order #",
+                    "actions": "Actions"
+                }
+            }
+        }
+    },
+    "auth": {
+        "register": "Register",
+        "registering": "Registering...",
+        "login": "Login",
+        "signIn": "Sign In",
+    "fullName": "Full name",
+        "email": "Email",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "alreadyAccount": "Already have an account?",
+        "noAccount": "Don't have an account?",
+        "registerHere": "Register",
+        "loginHere": "Log in",
+        "success": "Registration successful! Please log in.",
+        "pendingApproval": "Registration submitted! An administrator will review your account.",
+        "failed": "Registration failed",
+        "errors": {
+            "fullNameMin": "Full name must be at least 3 characters",
+            "emailInvalid": "Invalid email address",
+            "passwordMin": "Password must be at least 6 characters",
+            "passwordMatch": "Passwords do not match"
+        }
+    },
+    "admin": {
+        "registrations": {
+            "title": "Pending Registrations",
+            "pending": "pending",
+            "noPending": "No pending registrations.",
+            "fullName": "Full name",
+            "emailCol": "Email",
+            "registered": "Registered",
+            "actions": "Actions",
+            "approve": "Approve",
+            "reject": "Reject",
+            "approved": "User approved successfully.",
+            "rejected": "Registration rejected."
+        }
     }
 }

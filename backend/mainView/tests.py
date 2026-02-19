@@ -7,12 +7,18 @@ from .models import Item
 class ContentApiTestCase(APITestCase):
     def setUp(self):
         # Создаём пользователя
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.user = User.objects.create_user(
+            username='testuser@example.com',
+            password='testpassword',
+            email='testuser@example.com',
+            first_name='Test',
+            last_name='User',
+        )
         self.item = Item.objects.create(title="Test Item", owner=self.user)
         
         # Получаем JWT токен
         url = reverse('token_obtain_pair')
-        data = {'username': 'testuser', 'password': 'testpassword'}
+        data = {'email': 'testuser@example.com', 'password': 'testpassword'}
         response = self.client.post(url, data, format='json')
         self.token = response.data['access']
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
@@ -22,7 +28,10 @@ class ContentApiTestCase(APITestCase):
         url = reverse('item-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        if isinstance(response.data, dict) and 'results' in response.data:
+            self.assertEqual(len(response.data['results']), 1)
+        else:
+            self.assertEqual(len(response.data), 1)
 
     def test_create_item(self):
         """Тест создания объекта"""
@@ -53,7 +62,13 @@ from .models import Profile
 class ProfileTests(APITestCase):
     def setUp(self):
         super().setUp()
-        self.user = User.objects.create_user(username='profileuser', password='password123', email='test@example.com', first_name='Test', last_name='User')
+        self.user = User.objects.create_user(
+            username='profileuser@example.com',
+            password='password123',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+        )
         self.client.force_authenticate(user=self.user)
         self.profile_url = '/api/v1/profile/me/'
 

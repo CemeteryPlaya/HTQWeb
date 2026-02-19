@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import socket
+import ipaddress
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,9 +63,36 @@ if DEBUG:
     local_origins = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
         'http://192.168.2.106:3000',
         'http://192.168.2.54:3000',
     ]
+    # Auto-detect local IPs for frontend dev servers (optional, DEBUG only)
+    def _get_local_ips():
+        ips = set()
+        try:
+            hostname = socket.gethostname()
+            for info in socket.getaddrinfo(hostname, None):
+                ip = info[4][0]
+                if ':' in ip:
+                    continue  # skip IPv6
+                try:
+                    ip_obj = ipaddress.ip_address(ip)
+                    if not ip_obj.is_loopback:
+                        ips.add(ip)
+                except ValueError:
+                    continue
+        except Exception:
+            pass
+        return ips
+
+    raw_ports = os.environ.get('FRONTEND_PORTS', '3000,5173')
+    ports = [p.strip() for p in raw_ports.split(',') if p.strip()]
+    for ip in _get_local_ips():
+        for port in ports:
+            local_origins.append(f'http://{ip}:{port}')
+
     CSRF_TRUSTED_ORIGINS.extend(local_origins)
 
 INSTALLED_APPS = [
@@ -90,6 +119,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'hr.middleware.AuditLogMiddleware',
 ]
 
 ROOT_URLCONF = 'HTQWeb.urls'

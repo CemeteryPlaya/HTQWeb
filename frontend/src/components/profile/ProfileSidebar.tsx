@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/client';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
     roles?: string[];
@@ -12,67 +11,104 @@ type Props = {
 
 const isEditor = (roles?: string[]) => {
     if (!roles) return false;
-    return roles.includes('editor') || roles.includes('staff');
+    return roles.includes('editors') || roles.includes('staff');
+}
+
+const isHRManager = (roles?: string[]) => {
+    if (!roles) return false;
+    return roles.includes('hr_manager') || roles.includes('staff');
+}
+
+const isAdmin = (roles?: string[]) => {
+    if (!roles) return false;
+    return roles.includes('staff');
 }
 
 export const ProfileSidebar: React.FC<Props> = ({ roles }) => {
+    const { t } = useTranslation();
     const editor = isEditor(roles);
+    const hrManager = isHRManager(roles);
+    const admin = isAdmin(roles);
 
     return (
         <aside className="bg-card rounded-lg border p-4">
-            <h4 className="font-semibold mb-3">Account</h4>
+            <h4 className="font-semibold mb-3">{t('profile.sidebar.account')}</h4>
             <ul className="space-y-2 text-sm">
-                <li><Link to="/myprofile" className="text-primary hover:underline">My profile</Link></li>
-                <li><Link to="/myprofile" className="hover:underline">Settings</Link></li>
+                <li><Link to="/myprofile" className="text-primary hover:underline">{t('profile.sidebar.myProfile')}</Link></li>
+                <li><Link to="/myprofile" className="hover:underline">{t('profile.sidebar.settings')}</Link></li>
             </ul>
 
             {editor && (
                 <div className="mt-6">
-                    <h4 className="font-semibold mb-3">Editor</h4>
+                    <h4 className="font-semibold mb-3">{t('profile.sidebar.editor')}</h4>
                     <ul className="space-y-2 text-sm">
                         <li>
-                            <Link to="/manage/news" className="text-primary hover:underline">Manage News</Link>
+                            <Link to="/manage/news" className="text-primary hover:underline">{t('profile.sidebar.manageNews')}</Link>
                         </li>
                         <li>
-                            <Link to="/manage/projects" className="text-primary hover:underline">Manage Projects</Link>
+                            <Link to="/manage/projects" className="text-primary hover:underline">{t('profile.sidebar.manageProjects')}</Link>
                         </li>
                         <li>
                             <Link to="/manage/contacts" className="text-primary hover:underline flex items-center">
-                                <span>Contact Requests</span>
+                                <span>{t('profile.sidebar.contactRequests')}</span>
                                 {/* Fetch count of unhandled requests for staff/admin */}
                                 <UnreadContactsBadge />
                             </Link>
                         </li>
-                        <li>
-                            <a href="/admin/" className="text-primary hover:underline">Django admin</a>
-                        </li>
                     </ul>
+                </div>
+            )}
 
-                    <h4 className="font-semibold mb-3 mt-6">HR Management</h4>
+            {hrManager && (
+                <div className="mt-6">
+                    <h4 className="font-semibold mb-3">{t('profile.sidebar.hrManagement')}</h4>
                     <ul className="space-y-2 text-sm">
                         <li>
-                            <Link to="/hr/employees" className="text-primary hover:underline">Employees</Link>
+                            <Link to="/hr/employees" className="text-primary hover:underline">{t('profile.sidebar.employees')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/departments" className="text-primary hover:underline">Departments</Link>
+                            <Link to="/hr/departments" className="text-primary hover:underline">{t('profile.sidebar.departments')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/positions" className="text-primary hover:underline">Positions</Link>
+                            <Link to="/hr/positions" className="text-primary hover:underline">{t('profile.sidebar.positions')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/time-tracking" className="text-primary hover:underline">Time Tracking</Link>
+                            <Link to="/hr/time-tracking" className="text-primary hover:underline">{t('profile.sidebar.timeTracking')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/vacancies" className="text-primary hover:underline">Vacancies</Link>
+                            <Link to="/hr/vacancies" className="text-primary hover:underline">{t('profile.sidebar.vacancies')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/applications" className="text-primary hover:underline">Applications</Link>
+                            <Link to="/hr/applications" className="text-primary hover:underline">{t('profile.sidebar.applications')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/documents" className="text-primary hover:underline">Documents</Link>
+                            <Link to="/hr/documents" className="text-primary hover:underline">{t('profile.sidebar.documents')}</Link>
                         </li>
                         <li>
-                            <Link to="/hr/logs" className="text-primary hover:underline">Action Logs</Link>
+                            <Link to="/hr/profiles" className="text-primary hover:underline">{t('profile.sidebar.profiles')}</Link>
+                        </li>
+                        <li>
+                            <Link to="/hr/history" className="text-primary hover:underline">{t('profile.sidebar.history')}</Link>
+                        </li>
+                    </ul>
+                </div>
+            )}
+
+            {admin && (
+                <div className="mt-6">
+                    <h4 className="font-semibold mb-3">{t('profile.sidebar.adminTools')}</h4>
+                    <ul className="space-y-2 text-sm">
+                        <li>
+                            <a href="/admin/" className="text-primary hover:underline">{t('profile.sidebar.djangoAdmin')}</a>
+                        </li>
+                        <li>
+                            <Link to="/admin/registrations" className="text-primary hover:underline flex items-center">
+                                <span>{t('profile.sidebar.registrations')}</span>
+                                <PendingRegistrationsBadge />
+                            </Link>
+                        </li>
+                        <li>
+                            <Link to="/hr/logs" className="text-primary hover:underline">{t('profile.sidebar.actionLogs')}</Link>
                         </li>
                     </ul>
                 </div>
@@ -98,4 +134,21 @@ const UnreadContactsBadge: React.FC = () => {
     const count = data?.unhandled ?? 0;
     if (!count) return null;
     return <Badge className="ml-2">{count}</Badge>;
+};
+
+const PendingRegistrationsBadge: React.FC = () => {
+    const { data, error } = useQuery({
+        queryKey: ['pending-registrations-count'],
+        queryFn: async () => {
+            const res = await api.get('v1/admin/pending-registrations/');
+            return res.data;
+        },
+        retry: false,
+        refetchInterval: 30000,
+    });
+
+    if (error) return null;
+    const count = Array.isArray(data) ? data.length : 0;
+    if (!count) return null;
+    return <Badge variant="destructive" className="ml-2">{count}</Badge>;
 };
