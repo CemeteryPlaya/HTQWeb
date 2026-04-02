@@ -204,7 +204,7 @@ const HRHistory = () => {
 
   return (
     <HRLayout title={t('hr.pages.history.title')} subtitle={t('hr.pages.history.subtitle')}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {filteredRecords.length}</div>
         <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) closeDialog(); else setDialogOpen(true); }}>
           <DialogTrigger asChild>
@@ -331,7 +331,7 @@ const HRHistory = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -382,15 +382,15 @@ const HRHistory = () => {
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" onClick={() => startEdit(rec)}>{t('hr.common.edit')}</Button>
                       {isSenior && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          if (confirm(t('hr.pages.history.deleteConfirm'))) deleteMutation.mutate(rec.id);
-                        }}
-                      >
-                        {t('hr.common.delete')}
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (confirm(t('hr.pages.history.deleteConfirm'))) deleteMutation.mutate(rec.id);
+                          }}
+                        >
+                          {t('hr.common.delete')}
+                        </Button>
                       )}
                     </div>
                   </TableCell>

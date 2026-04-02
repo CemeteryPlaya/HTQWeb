@@ -36,12 +36,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
     fio = serializers.SerializerMethodField()
     department = serializers.SerializerMethodField()
+    department_id = serializers.SerializerMethodField()
     position = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['id', 'email', 'firstName', 'lastName', 'patronymic', 'fio', 'display_name', 'bio', 'avatar', 'avatarUrl', 'settings', 'roles', 'department', 'position', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'email', 'avatarUrl', 'created_at', 'updated_at', 'roles', 'fio', 'department', 'position']
+        fields = ['id', 'email', 'firstName', 'lastName', 'patronymic', 'phone', 'fio', 'display_name', 'bio', 'avatar', 'avatarUrl', 'settings', 'roles', 'department', 'department_id', 'position', 'must_change_password', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'avatarUrl', 'created_at', 'updated_at', 'roles', 'fio', 'department', 'department_id', 'position', 'must_change_password']
 
     def update(self, instance, validated_data):
         user_data = {}
@@ -78,6 +79,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             return obj.user.employee.department.name
         return None
 
+    def get_department_id(self, obj):
+        if hasattr(obj.user, 'employee') and obj.user.employee.department:
+            return obj.user.employee.department.id
+        return None
+
     def get_position(self, obj):
         if hasattr(obj.user, 'employee') and obj.user.employee.position:
             return obj.user.employee.position.title
@@ -104,25 +110,27 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'email'
 
     def validate(self, attrs):
-        email = attrs.get('email', '').strip()
+        login_id = attrs.get('email', '').strip()
         password = attrs.get('password', '')
 
-        if not email:
+        if not login_id:
             from rest_framework import exceptions
             raise exceptions.AuthenticationFailed(
-                'Email is required for login',
-                'email_required',
+                'Email or phone is required for login',
+                'login_required',
             )
 
+        from django.db.models import Q
         user = None
         try:
-            user_obj = User.objects.get(email__iexact=email)
+            # Try to find a user by their exact email, or by their profile's phone (exact match)
+            user_obj = User.objects.get(Q(email__iexact=login_id) | Q(profile__phone=login_id))
             user = authenticate(self.context['request'], username=user_obj.username, password=password)
         except User.DoesNotExist:
             user = None
         except User.MultipleObjectsReturned:
-            # Multiple users with same email — attempt exact match on username
-            user = authenticate(self.context['request'], username=email, password=password)
+            # If phone or email matches multiple (edge case), try direct username authentication
+            user = authenticate(self.context['request'], username=login_id, password=password)
 
         if user is None or not user.is_active:
             from rest_framework import exceptions

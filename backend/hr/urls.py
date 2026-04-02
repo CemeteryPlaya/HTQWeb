@@ -8,6 +8,10 @@ from .views import (
     PersonnelHistoryViewSet, EmployeeAccountViewSet,
     whoami,
 )
+from .department_files_views import (
+    DepartmentFolderViewSet,
+    DepartmentFileViewSet,
+)
 
 router = DefaultRouter()
 router.register(r'departments', DepartmentViewSet, basename='hr-department')
@@ -20,6 +24,8 @@ router.register(r'documents', DocumentViewSet, basename='hr-document')
 router.register(r'personnel-history', PersonnelHistoryViewSet, basename='hr-personnel-history')
 router.register(r'logs', HRActionLogViewSet, basename='hr-log')
 router.register(r'accounts', EmployeeAccountViewSet, basename='hr-account')
+router.register(r'department-folders', DepartmentFolderViewSet, basename='hr-department-folder')
+router.register(r'department-files', DepartmentFileViewSet, basename='hr-department-file')
 
 app_name = 'hr'
 
@@ -27,3 +33,4 @@ urlpatterns = [
     path('whoami/', whoami, name='hr-whoami'),
     path('', include(router.urls)),
 ]
+

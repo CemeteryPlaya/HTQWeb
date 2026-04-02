@@ -17,15 +17,14 @@ import {
   Handshake,
   Archive,
   KeyRound,
+  CalendarDays,
+  Video
 } from 'lucide-react';
 const navItems = [
   { to: '/hr/employees', icon: Users, labelKey: 'hr.nav.employees' },
-  { to: '/hr/departments', icon: Building2, labelKey: 'hr.nav.departments' },
-  { to: '/hr/positions', icon: Briefcase, labelKey: 'hr.nav.positions' },
+  { to: '/hr/departments', icon: Building2, labelKey: 'hr.nav.structure' },
   { to: '/hr/time-tracking', icon: Clock, labelKey: 'hr.nav.timeTracking' },
-  { to: '/hr/vacancies', icon: ClipboardList, labelKey: 'hr.nav.vacancies' },
-  { to: '/hr/applications', icon: ShieldCheck, labelKey: 'hr.nav.applications' },
-  { to: '/hr/offers', icon: Handshake, labelKey: 'hr.nav.offers' },
+  { to: '/hr/recruitment', icon: ClipboardList, labelKey: 'hr.nav.recruitment' },
   { to: '/hr/archive', icon: Archive, labelKey: 'hr.nav.archive' },
   { to: '/hr/documents', icon: FileText, labelKey: 'hr.nav.documents' },
   { to: '/hr/history', icon: History, labelKey: 'hr.nav.history' },
@@ -71,11 +70,10 @@ export const HRLayout: React.FC<Props> = ({ title, subtitle, children }) => {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
                 >
                   <item.icon className="h-4 w-4" />
                   {t(item.labelKey)}
@@ -97,11 +95,10 @@ export const HRLayout: React.FC<Props> = ({ title, subtitle, children }) => {
                       <Link
                         key={item.to}
                         to={item.to}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          active
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
                       >
                         <item.icon className="h-4 w-4" />
                         {t(item.labelKey)}

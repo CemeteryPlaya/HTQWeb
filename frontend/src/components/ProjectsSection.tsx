@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, MapPin, Zap, ArrowRight } from 'lucide-react';
 import { projects } from '@/data/projects';
+import { OptimizedImage } from './OptimizedImage';
 
 interface ProjectsSectionProps {
   limit?: number;
@@ -37,9 +38,14 @@ export const ProjectsSection = ({ limit = 10 }: ProjectsSectionProps) => {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Selected Project Image */}
           <div className="relative rounded-2xl overflow-hidden shadow-elevated h-[500px] lg:h-auto">
-            <img
+            <OptimizedImage
               src={selectedProject.image}
               alt={t(selectedProject.nameKey)}
+              width={800}
+              height={500}
+              srcSet={`${selectedProject.image.replace('.webp', '-400w.webp')} 400w, ${selectedProject.image} 800w`}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              loading="lazy"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent" />

@@ -4,6 +4,7 @@ export interface UserProfile {
     firstName?: string;
     lastName?: string;
     patronymic?: string;
+    phone?: string;
     fio?: string;
     display_name: string;
     bio: string;
@@ -15,7 +16,9 @@ export interface UserProfile {
         timezone?: string;
     };
     department?: string;
+    department_id?: number;
     position?: string;
+    must_change_password?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -24,6 +27,7 @@ export interface ProfileFormData {
     firstName?: string;
     lastName?: string;
     patronymic?: string;
+    phone?: string;
     display_name: string;
     bio: string;
     settings: {

@@ -1,14 +1,23 @@
 from django.shortcuts import render
 from django.core.mail import send_mail
 from django.conf import settings
+from urllib.parse import urlparse, urlunparse
+import ipaddress
+import json
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
 from .models import Item
 from .serializers import ItemSerializer
 from media_manager.models import News
 from .serializers import NewsSerializer
 from hr.roles import has_hr_group
 
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    GoogleTranslator = None
 # Create your views here.
 def index(request):
     return render(request, 'index.html')
@@ -61,6 +70,45 @@ class NewsViewSet(viewsets.ModelViewSet):
                 return super().get_queryset()
         return News.objects.filter(published=True).order_by('-published_at', '-created_at')
 
+    @action(detail=True, methods=['get', 'post'], permission_classes=[permissions.AllowAny])
+    def translate(self, request, slug=None):
+        """
+        Dynamically translates a news article's title and content to the target language 
+        (defaulting to English) using deep-translator.
+        """
+        if not GoogleTranslator:
+            from rest_framework.response import Response
+            return Response({"error": "Translation service is not configured."}, status=503)
+
+        news = self.get_object()
+        
+        if request.method == 'GET':
+            target_lang = request.query_params.get('target', 'en')
+        else:
+            target_lang = request.data.get('target', 'en')
+
+        try:
+            translator = GoogleTranslator(source='auto', target=target_lang)
+            translated_title = translator.translate(news.title) if news.title else ""
+            
+            # Translate content or summary
+            content_to_translate = news.content if news.content else (news.summary or "")
+            translated_content = translator.translate(content_to_translate) if content_to_translate else ""
+            
+            from rest_framework.response import Response
+            return Response({
+                "source_slug": news.slug,
+                "target_language": target_lang,
+                "translated_title": translated_title,
+                "translated_content": translated_content
+            })
+        except Exception as e:
+            import logging
+            logger = logging.getLogger('mainView')
+            logger.error("Translation error for news %s: %s", news.slug, str(e))
+            from rest_framework.response import Response
+            return Response({"error": "Failed to translate article."}, status=500)
+
 
 # (removed NewsLastModifiedAPIView - polling endpoint no longer used)
 
@@ -78,7 +126,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get', 'put', 'patch', 'head', 'options']
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
     pagination_class = None
 
     def _is_hr_or_staff(self):
@@ -93,6 +141,25 @@ class ProfileViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             return Profile.objects.filter(user=self.request.user)
         return Profile.objects.none()
+
+    @action(detail=False, methods=['post'], url_path='change-password', permission_classes=[permissions.IsAuthenticated])
+    def change_password(self, request):
+        """
+        Endpoint for user to change their own password, primarily to clear the must_change_password flag.
+        """
+        user = request.user
+        new_password = request.data.get('new_password')
+        if not new_password:
+            return Response({"detail": "new_password is required"}, status=400)
+            
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+        
+        if hasattr(user, 'profile'):
+            user.profile.must_change_password = False
+            user.profile.save(update_fields=['must_change_password'])
+            
+        return Response({"detail": "Password changed successfully"})
 
     @action(detail=False, methods=['get', 'put', 'patch'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
@@ -233,3 +300,119 @@ class ContactRequestViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 # We fail silently by default in send_mail, but we can log here if needed
                 print(f"Error sending email: {e}")
+
+
+class ConferenceConfigView(APIView):
+    """Return conference runtime config (backend is the single source of truth)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    @staticmethod
+    def _normalize_signaling_path(raw_path: str) -> str:
+        path = (raw_path or '/ws/sfu/').strip() or '/ws/sfu/'
+        return path if path.startswith('/') else f'/{path}'
+
+    @staticmethod
+    def _is_local_or_private_host(hostname: str) -> bool:
+        normalized = (hostname or '').strip().lower()
+        if not normalized:
+            return True
+
+        if normalized in {'localhost', '::1'} or normalized.endswith('.localhost'):
+            return True
+
+        try:
+            ip = ipaddress.ip_address(normalized)
+            return ip.is_loopback or ip.is_private or ip.is_link_local
+        except ValueError:
+            return False
+
+    def _resolve_signaling_url(self, request) -> str:
+        raw_url = (settings.CONFERENCE_SFU_URL or '').strip()
+        signaling_path = self._normalize_signaling_path(settings.CONFERENCE_SFU_PATH)
+        if not raw_url:
+            return ''
+
+        try:
+            parsed = urlparse(raw_url)
+        except ValueError:
+            return ''
+
+        scheme = (parsed.scheme or '').lower()
+        if scheme == 'http':
+            scheme = 'ws'
+        elif scheme == 'https':
+            scheme = 'wss'
+        elif scheme not in {'ws', 'wss'}:
+            return ''
+
+        request_host = request.get_host().split(':', 1)[0]
+        target_host = (parsed.hostname or '').strip()
+        if (
+            target_host
+            and not self._is_local_or_private_host(request_host)
+            and self._is_local_or_private_host(target_host)
+        ):
+            return ''
+
+        path = parsed.path or ''
+        if not path or path == '/':
+            path = signaling_path
+
+        if request.is_secure() and scheme == 'ws':
+            scheme = 'wss'
+
+        normalized = parsed._replace(scheme=scheme, path=path)
+        return urlunparse(normalized)
+
+    @staticmethod
+    def _resolve_ice_servers() -> list[dict]:
+        raw = (getattr(settings, 'CONFERENCE_ICE_SERVERS', '') or '').strip()
+        if not raw:
+            return []
+
+        try:
+            parsed = json.loads(raw)
+        except (TypeError, ValueError):
+            return []
+
+        if not isinstance(parsed, list):
+            return []
+
+        normalized: list[dict] = []
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+
+            raw_urls = entry.get('urls')
+            if isinstance(raw_urls, str):
+                urls = [raw_urls.strip()] if raw_urls.strip() else []
+            elif isinstance(raw_urls, list):
+                urls = [
+                    str(url).strip()
+                    for url in raw_urls
+                    if isinstance(url, str) and str(url).strip()
+                ]
+            else:
+                urls = []
+
+            if not urls:
+                continue
+
+            server: dict = {"urls": urls if len(urls) > 1 else urls[0]}
+            username = entry.get('username')
+            credential = entry.get('credential')
+            if isinstance(username, str) and username.strip():
+                server['username'] = username.strip()
+            if isinstance(credential, str) and credential.strip():
+                server['credential'] = credential.strip()
+
+            normalized.append(server)
+
+        return normalized
+
+    def get(self, request):
+        return Response({
+            "sfu_signaling_url": self._resolve_signaling_url(request),
+            "sfu_signaling_path": settings.CONFERENCE_SFU_PATH,
+            "ice_servers": self._resolve_ice_servers(),
+        })

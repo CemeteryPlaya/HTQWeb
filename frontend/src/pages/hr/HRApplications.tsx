@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/client';
-import HRLayout from '@/components/hr/HRLayout';
+import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useHRLevel } from '@/hooks/useHRLevel';
@@ -182,28 +183,27 @@ const HRApplications = () => {
 
   if (isLoading) {
     return (
-      <HRLayout title={t('hr.pages.applications.title')} subtitle={t('hr.pages.applications.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
     );
   }
   if (error) {
     return (
-      <HRLayout title={t('hr.pages.applications.title')} subtitle={t('hr.pages.applications.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
-          {t('hr.pages.applications.error')}
-        </div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
+        {t('hr.pages.applications.error')}
+      </div>
     );
   }
 
   return (
-    <HRLayout title={t('hr.pages.applications.title')} subtitle={t('hr.pages.applications.subtitle')}>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {applications?.length || 0}</div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={startCreate}>{t('hr.pages.applications.add')}</Button>
+            <Button onClick={startCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t('hr.pages.applications.add')}
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -245,7 +245,7 @@ const HRApplications = () => {
                 </label>
                 <label className="grid gap-2 text-sm">
                   {t('hr.pages.applications.fields.phone')}
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <PhoneInput value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
                 </label>
               </div>
 
@@ -324,18 +324,17 @@ const HRApplications = () => {
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => startEdit(app)}>{t('hr.common.edit')}</Button>
                     {isSenior && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.applications.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(app.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.applications.deleteConfirm'))) {
+                            deleteMutation.mutate(app.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -344,7 +343,7 @@ const HRApplications = () => {
           </TableBody>
         </Table>
       </div>
-    </HRLayout>
+    </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchDocuments, uploadDocument, deleteDocument, fetchEmployees } from '@/api/hr';
@@ -121,16 +121,16 @@ const HRDocuments = () => {
   });
 
   /* ---- filtered ---- */
-  const filtered = useMemo(() => {
-    if (!search.trim()) return documents;
-    const q = search.toLowerCase();
-    return documents.filter(
-      (d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.employee_name.toLowerCase().includes(q) ||
-        (d.description || '').toLowerCase().includes(q),
-    );
-  }, [documents, search]);
+  const filtered = !search.trim()
+    ? documents
+    : documents.filter((d) => {
+        const q = search.toLowerCase();
+        return (
+          d.title.toLowerCase().includes(q) ||
+          d.employee_name.toLowerCase().includes(q) ||
+          (d.description || '').toLowerCase().includes(q)
+        );
+      });
 
   /* ---- helpers ---- */
   const closeDialog = () => {

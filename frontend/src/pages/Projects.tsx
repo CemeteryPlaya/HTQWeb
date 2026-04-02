@@ -67,7 +67,7 @@ const Projects = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="font-display font-bold text-lg text-primary-foreground">{t(project.nameKey)}</h3>
+                    <h2 className="font-display font-bold text-lg text-primary-foreground">{t(project.nameKey)}</h2>
                   </div>
                 </div>
                 <div className="p-6">

@@ -47,6 +47,11 @@ export const ProfileSidebar: React.FC<Props> = ({ roles, department, position })
             <h4 className="font-semibold mb-3">{t('profile.sidebar.account')}</h4>
             <ul className="space-y-2 text-sm">
                 <li><Link to="/myprofile" className="text-primary hover:underline">{t('profile.sidebar.myProfile')}</Link></li>
+                <li><Link to="/conference" className="text-primary hover:underline flex items-center gap-1.5">🎥 Видеоконференция</Link></li>
+                <li><Link to="/messenger" className="text-primary hover:underline flex items-center gap-1.5">💬 Мессенджер</Link></li>
+                <li><Link to="/email" className="text-primary hover:underline flex items-center gap-1.5">📧 Почта</Link></li>
+                <li><Link to="/calendar" className="text-primary hover:underline flex items-center gap-1.5">📅 Календарь</Link></li>
+                <li><Link to="/files" className="text-primary hover:underline flex items-center gap-1.5">📁 Файлы отдела</Link></li>
                 <li><Link to="/myprofile" className="hover:underline">{t('profile.sidebar.settings')}</Link></li>
             </ul>
 
@@ -137,7 +142,9 @@ export const ProfileSidebar: React.FC<Props> = ({ roles, department, position })
                             </Link>
                         </li>
                         <li>
-                            <Link to="/hr/logs" className="text-primary hover:underline">{t('profile.sidebar.actionLogs')}</Link>
+                            <Link to="/admin/chats" className="text-primary hover:underline flex items-center gap-1.5">
+                                Управление чатами
+                            </Link>
                         </li>
                     </ul>
                 </div>

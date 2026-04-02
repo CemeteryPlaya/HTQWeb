@@ -1,38 +1,354 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
+import { visualizer } from "rollup-plugin-visualizer";
+import viteCompression from "vite-plugin-compression";
+import compression from "compression";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
+
+// ── HTTPS for LAN testing ──
+// If certs exist at ../certs/, enable HTTPS so browsers treat
+// local-network IPs as Secure Context (required for getUserMedia + WSS).
+function loadHttpsConfig() {
+  const certPath = path.resolve(__dirname, "certs", "cert.pem");
+  const keyPath = path.resolve(__dirname, "certs", "key.pem");
+  // Also check project-root level certs/
+  const certPathRoot = path.resolve(__dirname, "..", "certs", "cert.pem");
+  const keyPathRoot = path.resolve(__dirname, "..", "certs", "key.pem");
+
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    return { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) };
+  }
+  if (fs.existsSync(certPathRoot) && fs.existsSync(keyPathRoot)) {
+    return { cert: fs.readFileSync(certPathRoot), key: fs.readFileSync(keyPathRoot) };
+  }
+  return undefined;
+}
+
+function isEnvFalse(value: string | undefined) {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "false" || normalized === "0" || normalized === "off" || normalized === "no";
+}
 
 // https://vitejs.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const enableDevCompression = env.VITE_DEV_COMPRESSION === "true";
+  // `VITE_DEV_HTTPS=false` is useful only for explicit HTTP-only local checks.
+  // For ngrok/public testing prefer HTTPS.
+  const httpsDisabledByEnv = isEnvFalse(env.VITE_DEV_HTTPS);
+  const httpsConfig = httpsDisabledByEnv ? undefined : loadHttpsConfig();
+  const isHttps = !!httpsConfig;
+  // NOTE:
+  // 0.0.0.0 is valid as a server bind address, but not as an outbound proxy target.
+  // Use loopback defaults so /api and /ws proxies work reliably in local/LAN dev.
+  const backendHttpTarget = env.VITE_BACKEND_HTTP_TARGET || "http://127.0.0.1:8000";
+  // Keep SFU upstream plain WS by default (common for local/tunnel mode where TLS
+  // is terminated at reverse proxy edge). If your SFU listens with TLS locally,
+  // override via VITE_SFU_WS_TARGET=wss://127.0.0.1:4443.
+  const sfuWsTarget = env.VITE_SFU_WS_TARGET || "ws://127.0.0.1:4443";
+  const backendWsTarget = env.VITE_BACKEND_WS_TARGET || "ws://127.0.0.1:8000";
+  const disableHmr = env.VITE_DISABLE_HMR === "true";
+  const tunnelPublicHost = String(env.VITE_TUNNEL_PUBLIC_HOST || "").trim();
+  const hmrConfig = disableHmr
+    ? false
+    : tunnelPublicHost
+      ? {
+          overlay: false,
+          host: tunnelPublicHost,
+          protocol: "wss",
+          clientPort: 443,
+        }
+      : {
+          overlay: false,
+        };
+  if (httpsDisabledByEnv) {
+    console.log("[vite] HTTPS disabled via VITE_DEV_HTTPS=false (HTTP mode on :3000)");
+  } else if (isHttps) {
+    console.log("[vite] HTTPS enabled — LAN devices can access via https://<IP>:3000");
+  } else {
+    console.log("[vite] HTTPS certs not found — using HTTP on :3000");
+  }
+  console.log(`[vite] Backend HTTP proxy target: ${backendHttpTarget}`);
+  console.log(`[vite] SFU WS proxy target: ${sfuWsTarget}`);
+  if (disableHmr) {
+    console.log("[vite] HMR disabled via VITE_DISABLE_HMR=true");
+  } else if (tunnelPublicHost) {
+    console.log(`[vite] HMR pinned to tunnel host: wss://${tunnelPublicHost}:443`);
+  }
+
+  const buildProxyConfig = () => ({
+    "/ws/sfu": {
+      target: sfuWsTarget,
+      ws: true,
+      changeOrigin: true,
+      secure: false, // Allow self-signed SFU cert
+      timeout: 15000,
+      proxyTimeout: 15000,
+    },
+    "/ws/sfu/": {
+      target: sfuWsTarget,
+      ws: true,
+      changeOrigin: true,
+      secure: false,
+      timeout: 15000,
+      proxyTimeout: 15000,
+    },
+    "^/ws(?!/sfu/?).*": {
+      target: backendWsTarget,
+      ws: true,
+      changeOrigin: true,
+    },
+    "/api": {
+      target: backendHttpTarget,
+      changeOrigin: true,
+    },
+    "/media": {
+      target: backendHttpTarget,
+      changeOrigin: true,
+    },
+    "/admin": {
+      target: backendHttpTarget,
+      changeOrigin: true,
+    },
+    "/static": {
+      target: backendHttpTarget,
+      changeOrigin: true,
+    },
+  });
+
+  return {
   server: {
-    host: "::",
+    host: '0.0.0.0',
     port: 3000,
-    hmr: {
-      overlay: false,
-    },
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/media': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/admin': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/static': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-    },
+    // Load HTTPS if certs/ exist — required for Secure Context on LAN IPs.
+    ...(httpsConfig ? { https: httpsConfig } : {}),
+    // Tunnel remote testing (for example ngrok):
+    // 1) run frontend: `npm run dev` (3000)
+    // 2) run SFU: `npm run dev` inside `sfu/` (4443)
+    // 3) tunnel MUST forward app origin to Vite only (3000)
+    //    then Vite proxy keeps `/ws/sfu` pinned to 4443.
+    //    If tunnel supports route rules, keep `/ws/sfu*` on the same origin.
+    allowedHosts: "all",
+    cors: true,
+    hmr: hmrConfig,
+    proxy: buildProxyConfig(),
   },
-  plugins: [react()],
+  preview: {
+    host: true,
+    port: 3000,
+    ...(httpsConfig ? { https: httpsConfig } : {}),
+    allowedHosts: "all",
+    cors: true,
+    proxy: buildProxyConfig(),
+  },
+  plugins: [
+    // Optional compression for remote dev testing (off by default because it slows local HMR responses).
+    ...(enableDevCompression
+      ? [{
+          name: "dev-server-compression",
+          configureServer(server) {
+            server.middlewares.use(
+              compression({
+                level: 5,
+                threshold: 1024,
+              }) as any
+            );
+          },
+        }]
+      : []),
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler", {}]],
+      },
+    }),
+    ViteImageOptimizer({
+      webp: {
+        quality: 80,
+      },
+      avif: {
+        quality: 80,
+      },
+      png: {
+        quality: 80,
+      },
+      jpeg: {
+        quality: 80,
+      },
+    }),
+    // Bundle analysis — generates bundle-report.html after build
+    visualizer({
+      filename: "bundle-report.html",
+      gzipSize: true,
+      brotliSize: true,
+    }),
+    // Brotli pre-compression (level 11) for CI/CD static serving
+    viteCompression({
+      algorithm: "brotliCompress",
+      ext: ".br",
+      threshold: 1024,
+      compressionOptions: { level: 11 },
+      filter: /\.(js|css|json|svg|html)$/i,
+      deleteOriginFile: false,
+    }),
+    // Gzip fallback for clients without brotli support
+    viteCompression({
+      algorithm: "gzip",
+      ext: ".gz",
+      threshold: 1024,
+      compressionOptions: { level: 9 },
+      filter: /\.(js|css|json|svg|html)$/i,
+      deleteOriginFile: false,
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Skip lucide-react barrel re-export in dev — faster HMR rebuilds
+      "lucide-react": path.resolve(__dirname, "node_modules/lucide-react/dist/esm/lucide-react.js"),
     },
   },
-}));
+  build: {
+    target: "es2020", // Drop legacy polyfills (async/await, optional chaining, etc.)
+    chunkSizeWarningLimit: 500, // KB — warn if any chunk exceeds 500 KB
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          // React core
+          if (
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/react/")
+          ) {
+            return "vendor-react";
+          }
+          // Router stays separate so public landing page doesn't have to wait on all route internals
+          if (id.includes("node_modules/react-router-dom")) {
+            return "vendor-router";
+          }
+          // Radix slot is used in base button and should not pull the whole Radix stack
+          if (id.includes("node_modules/@radix-ui/react-slot")) {
+            return "vendor-radix-slot";
+          }
+          // Remaining Radix primitives (dialogs, popovers, etc.) are typically lazy-route dependent
+          if (id.includes("node_modules/@radix-ui")) {
+            return "vendor-radix";
+          }
+          if (id.includes("node_modules/cmdk")) {
+            return "vendor-cmdk";
+          }
+          // Utility stack used by many UI components; keep it out of feature chunks.
+          if (
+            id.includes("node_modules/clsx") ||
+            id.includes("node_modules/class-variance-authority") ||
+            id.includes("node_modules/tailwind-merge")
+          ) {
+            return "vendor-utils";
+          }
+          // recharts + D3 — heavy, loaded only with HRReports lazy chunk
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "vendor-recharts";
+          }
+          if (id.includes("node_modules/@tanstack/react-query")) {
+            return "vendor-query";
+          }
+          if (id.includes("node_modules/i18next") || id.includes("node_modules/react-i18next")) {
+            return "vendor-i18n";
+          }
+          if (id.includes("node_modules/i18next-browser-languagedetector")) {
+            return "vendor-i18n-detector";
+          }
+          if (id.includes("node_modules/i18next-http-backend")) {
+            return "vendor-i18n-backend";
+          }
+          if (id.includes("node_modules/axios")) {
+            return "vendor-axios";
+          }
+          if (id.includes("node_modules/date-fns")) {
+            return "vendor-date-fns";
+          }
+          // Forms: zod + react-hook-form
+          if (
+            id.includes("node_modules/zod") ||
+            id.includes("node_modules/react-hook-form") ||
+            id.includes("node_modules/@hookform")
+          ) {
+            return "vendor-forms";
+          }
+          // Icons — large lib, cache separately so app code changes don't bust it
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "react-router-dom",
+      "@tanstack/react-query",
+      "axios",
+
+      "react-hook-form",
+      "@hookform/resolvers/zod",
+      "zod",
+      "clsx",
+      "tailwind-merge",
+      "react-i18next",
+      "i18next",
+      "i18next-browser-languagedetector",
+      "i18next-http-backend",
+      "sonner",
+      "date-fns",
+      "embla-carousel-react",
+      "class-variance-authority",
+      "cmdk",
+      "input-otp",
+      "vaul",
+
+      // Pre-bundle lucide-react — eliminates 4 MB waterfall in dev
+      // (esbuild bundles all icons into one ~156 KB file;
+      //  production tree-shaking still produces a small vendor-icons chunk)
+      "lucide-react",
+
+      // Theme & UI utilities
+      "next-themes",
+      "react-day-picker",
+      "@hello-pangea/dnd",
+      "react-resizable-panels",
+
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-select",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-label",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-toast",
+      "@radix-ui/react-avatar",
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-separator",
+      "@radix-ui/react-accordion",
+      "@radix-ui/react-alert-dialog",
+      "@radix-ui/react-navigation-menu",
+      "@radix-ui/react-radio-group",
+      "@radix-ui/react-progress",
+      "@radix-ui/react-toggle",
+      "@radix-ui/react-toggle-group",
+      "@radix-ui/react-collapsible",
+      "@radix-ui/react-context-menu",
+      "@radix-ui/react-hover-card",
+      "@radix-ui/react-menubar",
+      "@radix-ui/react-slider",
+      "@radix-ui/react-aspect-ratio",
+    ],
+  }
+  };
+});

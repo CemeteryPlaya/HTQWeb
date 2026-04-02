@@ -3,10 +3,11 @@
 /* ------------------------------------------------------------------ */
 import api from '@/api/client';
 import type {
-  Label, ProjectVersion, Task, TaskComment, TaskAttachment, TaskStats,
+  Label, ProjectVersion, Task, TaskComment, TaskAttachment, TaskStats, TaskStatus,
+  TaskLink, Notification
 } from '@/types/tasks';
 
-const HR = 'hr/';
+const HR = '';
 
 /* Unwrap paginated or plain array response */
 function unwrap<T>(data: any): T[] {
@@ -74,7 +75,12 @@ export const fetchTasks = async (params?: Record<string, string>): Promise<Task[
 };
 
 export const fetchTask = async (id: number): Promise<Task> => {
-  const res = await api.get(`${HR}tasks/${id}/`);
+  const res = await api.get<Task>(`${HR}tasks/${id}/`);
+  return res.data;
+};
+
+export const fetchTaskTransitions = async (id: number): Promise<TaskStatus[]> => {
+  const res = await api.get<TaskStatus[]>(`${HR}tasks/${id}/transitions/`);
   return res.data;
 };
 
@@ -110,4 +116,27 @@ export const addTaskAttachment = async (taskId: number, file: File): Promise<Tas
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
+};
+/* ---------- Task Links ---------- */
+export const createTaskLink = async (data: { source: number; target: number; link_type: string }): Promise<TaskLink> => {
+  const res = await api.post(`${HR}task-links/`, data);
+  return res.data;
+};
+
+export const deleteTaskLink = async (id: number): Promise<void> => {
+  await api.delete(`${HR}task-links/${id}/`);
+};
+
+/* ---------- Notifications ---------- */
+export const fetchNotifications = async (): Promise<Notification[]> => {
+  const res = await api.get(`${HR}notifications/`);
+  return unwrap<Notification>(res.data);
+};
+
+export const markNotificationRead = async (id: number): Promise<void> => {
+  await api.post(`${HR}notifications/${id}/mark_read/`);
+};
+
+export const markAllNotificationsRead = async (): Promise<void> => {
+  await api.post(`${HR}notifications/mark-all-read/`);
 };

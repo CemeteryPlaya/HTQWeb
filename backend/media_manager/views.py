@@ -14,6 +14,11 @@ from rest_framework.response import Response
 from .models import News, ContactRequest
 from .serializers import NewsSerializer, ContactRequestSerializer
 
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    GoogleTranslator = None
+
 logger = logging.getLogger('media_manager')
 
 
@@ -66,6 +71,37 @@ class NewsViewSet(viewsets.ModelViewSet):
         elif not instance.published and instance.published_at:
             instance.published_at = None
             instance.save(update_fields=['published_at'])
+
+    @action(detail=True, methods=['get', 'post'], permission_classes=[AllowAny])
+    def translate(self, request, slug=None):
+        """
+        Dynamically translates a news article's title and content to the target language
+        (defaulting to English) using deep-translator.
+        Accepts GET (?target=en) or POST (body: {"target": "en"}).
+        """
+        if not GoogleTranslator:
+            return Response({"error": "Translation service is not configured."}, status=503)
+
+        news = self.get_object()
+        target_lang = request.query_params.get('target') or request.data.get('target', 'en')
+
+        try:
+            translator = GoogleTranslator(source='auto', target=target_lang)
+            translated_title = translator.translate(news.title) if news.title else ""
+            
+            # Translate content or summary
+            content_to_translate = news.content if news.content else (news.summary or "")
+            translated_content = translator.translate(content_to_translate) if content_to_translate else ""
+            
+            return Response({
+                "source_slug": news.slug,
+                "target_language": target_lang,
+                "translated_title": translated_title,
+                "translated_content": translated_content
+            })
+        except Exception as e:
+            logger.error("Translation error for news %s: %s", news.slug, str(e))
+            return Response({"error": "Failed to translate article."}, status=500)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

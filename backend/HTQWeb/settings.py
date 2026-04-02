@@ -18,6 +18,20 @@ import ipaddress
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Загружаем ТОЛЬКО Gmail-настройки из .env (Updated to fix redirect_uri)
+_env_file = BASE_DIR.parent / '.env'
+if _env_file.is_file():
+    with open(_env_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, _, value = line.partition('=')
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key.startswith(('GMAIL_', 'OAUTH_', 'GOOGLE_OAUTH_', 'MICROSOFT_OAUTH_')):
+                os.environ[key] = value
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -94,8 +108,14 @@ if DEBUG:
             local_origins.append(f'http://{ip}:{port}')
 
     CSRF_TRUSTED_ORIGINS.extend(local_origins)
+    
+    # When CORS_ALLOW_CREDENTIALS is True, we MUST specify origins
+    if CORS_ALLOW_CREDENTIALS:
+        CORS_ALLOW_ALL_ORIGINS = False
+        CORS_ALLOWED_ORIGINS = list(set(local_origins))
 
 INSTALLED_APPS = [
+    'daphne',                    # ASGI server — must be first to override runserver
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -106,12 +126,15 @@ INSTALLED_APPS = [
     'media_manager',
     'hr',
     'tasks',
+    'messenger',                 # E2EE corporate messenger (isolated module)
+    'internal_email',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'django.middleware.gzip.GZipMiddleware',   # compress all text/JSON responses
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -141,6 +164,18 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'HTQWeb.wsgi.application'
+ASGI_APPLICATION = 'HTQWeb.asgi.application'
+
+# --- Django Channels (WebSocket layer) ---
+CHANNEL_LAYERS = {
+    'default': {
+        # In production: use Redis channel layer (see docker-compose.yml)
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {'hosts': [('redis', 6379)]},
+        # In development: in-memory layer (single-process only)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 # Database
@@ -217,6 +252,53 @@ STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Conference / SFU signaling source of truth (backend-driven).
+# Frontend should never hardcode SFU host.
+# If CONFERENCE_SFU_URL is empty, frontend builds ws/wss URL using current origin + CONFERENCE_SFU_PATH.
+CONFERENCE_SFU_URL = (
+    os.environ.get('CONFERENCE_SFU_URL')
+    or os.environ.get('SFU_SIGNALING_URL')
+    or os.environ.get('VITE_SFU_URL')
+    or ''
+)
+CONFERENCE_SFU_PATH = os.environ.get('CONFERENCE_SFU_PATH', '/ws/sfu/')
+# Optional JSON array for frontend RTCConfiguration. Example:
+# [
+#   {"urls":["stun:stun.l.google.com:19302"]},
+#   {"urls":["turn:global.turn.twilio.com:3478?transport=udp","turns:global.turn.twilio.com:443?transport=tcp"],"username":"twilio-user","credential":"twilio-pass"},
+#   {"urls":["turn:your-project.metered.live:80?transport=udp","turn:your-project.metered.live:443?transport=tcp"],"username":"metered-user","credential":"metered-pass"}
+# ]
+CONFERENCE_ICE_SERVERS = os.environ.get('CONFERENCE_ICE_SERVERS', '')
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  File Storage — S3 / MinIO (opt-in via environment variables)
+# ═══════════════════════════════════════════════════════════════════════════
+_STORAGE_BACKEND = os.environ.get('STORAGE_BACKEND', 'local')  # 'local' | 's3'
+
+if _STORAGE_BACKEND == 's3':
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "access_key": os.environ.get("AWS_ACCESS_KEY_ID", ""),
+                "secret_key": os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+                "bucket_name": os.environ.get("AWS_STORAGE_BUCKET_NAME", "htqweb-media"),
+                "endpoint_url": os.environ.get("AWS_S3_ENDPOINT_URL", ""),
+                "region_name": os.environ.get("AWS_S3_REGION_NAME", "us-east-1"),
+                "default_acl": None,
+                "querystring_auth": True,
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    _s3_custom_domain = os.environ.get("AWS_S3_CUSTOM_DOMAIN", "")
+    if _s3_custom_domain:
+        STORAGES["default"]["OPTIONS"]["custom_domain"] = _s3_custom_domain
+        MEDIA_URL = f'https://{_s3_custom_domain}/'
+
 REST_FRAMEWORK = {
     # Используем JWT для авторизации
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -277,15 +359,47 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'internal_email': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
 
 # Email Backend Settings
-# By default, emails are printed to the console for development.
-# To send real emails, change this to 'django.core.mail.backends.smtp.EmailBackend' 
-# and provide SMTP_* settings.
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@hi-tech-group.com'
 
 # List of emails that will receive notifications about new contact requests
 STAFF_NOTIFICATION_EMAILS = ['admin@example.com'] # Replace with real staff emails
+
+# Gmail SMTP Settings (LEGACY — kept for fallback, will be removed)
+GMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS', '')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  OAuth 2.0 — per-user email sending (Google Workspace / Microsoft 365)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# AES-256-GCM encryption key for OAuth tokens (base64-encoded 32-byte key)
+# Generate: python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+OAUTH_ENCRYPTION_KEY = os.environ.get('OAUTH_ENCRYPTION_KEY', '')
+
+# Google OAuth 2.0 (Gmail API)
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
+GOOGLE_OAUTH_REDIRECT_URI = os.environ.get(
+    'GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:8000/api/email/oauth/callback/'
+)
+
+# Microsoft OAuth 2.0 (Graph API)
+MICROSOFT_OAUTH_CLIENT_ID = os.environ.get('MICROSOFT_OAUTH_CLIENT_ID', '')
+MICROSOFT_OAUTH_CLIENT_SECRET = os.environ.get('MICROSOFT_OAUTH_CLIENT_SECRET', '')
+MICROSOFT_OAUTH_REDIRECT_URI = os.environ.get(
+    'MICROSOFT_OAUTH_REDIRECT_URI', 'http://localhost:8000/api/email/oauth/callback/'
+)
+MICROSOFT_OAUTH_TENANT_ID = os.environ.get('MICROSOFT_OAUTH_TENANT_ID', 'common')
+
+# Session engine (needed for OAuth state CSRF protection)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'

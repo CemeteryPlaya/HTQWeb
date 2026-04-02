@@ -1,5 +1,12 @@
 version: '3.9'
 
+# ─── Performance Note (Windows) ─────────────────────────────────────────────
+# Running from Windows /mnt/c/ (cross-OS bridge) adds ~500ms latency per
+# static file I/O. For production-like performance and accurate Lighthouse
+# testing, clone the repo into the WSL2 native filesystem:
+#   ~/projects/HTQWeb1  (NOT /mnt/c/Users/.../HTQWeb1)
+# ─────────────────────────────────────────────────────────────────────────────
+
 services:
   # ─── PostgreSQL ───────────────────────────────────
   db:
@@ -11,6 +18,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-ltree.sql:/docker-entrypoint-initdb.d/01-ltree.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-htqweb}"]
       interval: 5s
@@ -50,13 +58,34 @@ services:
       sh -c "
         python manage.py migrate --noinput &&
         python manage.py collectstatic --noinput &&
-        gunicorn HTQWeb.wsgi:application
-          --bind 0.0.0.0:8000
-          --workers 3
-          --timeout 120
-          --access-logfile -
-          --error-logfile -
+        daphne HTQWeb.asgi:application
+          --bind 0.0.0.0
+          --port 8000
+          --verbosity 1
       "
+
+  # ─── SFU (Mediasoup signaling + media) ────────────
+  sfu:
+    build:
+      context: ./sfu
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SFU_PORT: 4443
+      SFU_HOST: 0.0.0.0
+      SIGNALING_REQUIRE_TLS: "false"
+      WEBRTC_LISTEN_IPS: ${WEBRTC_LISTEN_IPS:-0.0.0.0}
+      RTC_MIN_PORT: ${RTC_MIN_PORT:-10000}
+      RTC_MAX_PORT: ${RTC_MAX_PORT:-10999}
+      VIDEO_BITRATE_BPS: ${VIDEO_BITRATE_BPS:-12000000}
+      AUDIO_BITRATE_BPS: ${AUDIO_BITRATE_BPS:-192000}
+      TURN_URL: ${TURN_URL:-}
+      TURN_USERNAME: ${TURN_USERNAME:-}
+      TURN_CREDENTIAL: ${TURN_CREDENTIAL:-}
+    ports:
+      - "4443:4443"
+      - "10000-10999:10000-10999/udp"
+      - "10000-10999:10000-10999/tcp"
 
   # ─── Nginx (reverse proxy + frontend) ────────────
   nginx:
@@ -71,8 +100,31 @@ services:
       - media_files:/app/media:ro
     depends_on:
       - backend
+      - sfu
+
+  # ─── MinIO (S3-compatible object storage, optional) ──
+  # Раскомментируйте для использования S3 хранилища.
+  # Не забудьте выставить STORAGE_BACKEND=s3 в .env
+  #
+  # minio:
+  #   image: minio/minio:latest
+  #   restart: unless-stopped
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+  #     MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "mc", "ready", "local"]
+  #     interval: 5s
+  #     retries: 5
 
 volumes:
   postgres_data:
   static_files:
   media_files:
+  # minio_data:

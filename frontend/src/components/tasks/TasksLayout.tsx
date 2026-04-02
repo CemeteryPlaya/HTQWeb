@@ -49,11 +49,10 @@ export const TasksLayout: React.FC<Props> = ({ title, subtitle, children }) => {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    active
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${active
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   <item.icon className="h-4 w-4" />
                   {t(item.labelKey)}
@@ -62,7 +61,7 @@ export const TasksLayout: React.FC<Props> = ({ title, subtitle, children }) => {
             })}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] items-start">
             <aside className="hidden lg:block">
               <div className="rounded-2xl border bg-card/70 p-4 shadow-[var(--shadow-soft)]">
                 <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3">
@@ -75,11 +74,10 @@ export const TasksLayout: React.FC<Props> = ({ title, subtitle, children }) => {
                       <Link
                         key={item.to}
                         to={item.to}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          active
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         <item.icon className="h-4 w-4" />
                         {t(item.labelKey)}
@@ -90,7 +88,7 @@ export const TasksLayout: React.FC<Props> = ({ title, subtitle, children }) => {
               </div>
             </aside>
 
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0 w-full">
               {children}
             </div>
           </div>

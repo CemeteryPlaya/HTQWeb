@@ -23,6 +23,7 @@ const IntegrationDemo = () => {
     const handleLogout = () => {
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');
+        localStorage.removeItem('cached_profile');
         setIsLoggedIn(false);
     };
 
@@ -30,27 +31,27 @@ const IntegrationDemo = () => {
         <div className={`min-h-screen language-transition ${isChanging ? 'language-changing' : ''}`}>
             <Header />
             <div className="container mx-auto p-4 pt-24">
-            <h1 className="text-3xl font-bold mb-6 text-center">Django + React Integration Demo</h1>
+                <h1 className="text-3xl font-bold mb-6 text-center">Django + React Integration Demo</h1>
 
-            {!isLoggedIn ? (
-                <LoginForm onLogin={handleLogin} />
-            ) : (
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl">Welcome!</h2>
-                        <button
-                            onClick={handleLogout}
-                            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                        >
-                            Logout
-                        </button>
+                {!isLoggedIn ? (
+                    <LoginForm onLogin={handleLogin} />
+                ) : (
+                    <div>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl">Welcome!</h2>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <ItemCreate onItemCreated={() => window.location.reload()} />
+                            <ItemsList />
+                        </div>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <ItemCreate onItemCreated={() => window.location.reload()} />
-                        <ItemsList />
-                    </div>
-                </div>
-            )}
+                )}
             </div>
         </div>
     );

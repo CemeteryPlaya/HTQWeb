@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface PendingUser {
   id: number;
@@ -47,14 +48,24 @@ const AdminRegistrations = () => {
   });
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">{t('admin.registrations.title')}</h1>
-          {users && users.length > 0 && (
-            <Badge variant="secondary">{users.length} {t('admin.registrations.pending')}</Badge>
-          )}
+        <div className="mb-6 flex flex-col gap-4">
+          <Link
+            to="/myprofile"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('hr.backToMain', 'Назад в профиль')}
+          </Link>
+
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">{t('admin.registrations.title')}</h1>
+            {users && users.length > 0 && (
+              <Badge variant="secondary">{users.length} {t('admin.registrations.pending')}</Badge>
+            )}
+          </div>
         </div>
 
         {isLoading ? (

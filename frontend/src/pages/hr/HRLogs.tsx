@@ -98,7 +98,7 @@ const HRLogs = () => {
           </div>
         )}
         {!isLoading && !error && (
-          <div className="bg-card rounded-2xl border">
+          <div className="bg-card rounded-2xl border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

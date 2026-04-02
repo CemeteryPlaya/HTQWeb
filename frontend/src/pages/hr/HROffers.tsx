@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/client';
-import HRLayout from '@/components/hr/HRLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,27 +59,23 @@ const HROffers = () => {
 
   if (isLoading) {
     return (
-      <HRLayout title={t('hr.pages.offers.title')} subtitle={t('hr.pages.offers.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
     );
   }
 
   if (error) {
     return (
-      <HRLayout title={t('hr.pages.offers.title')} subtitle={t('hr.pages.offers.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
-          {t('hr.pages.offers.error')}
-        </div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
+        {t('hr.pages.offers.error')}
+      </div>
     );
   }
 
   return (
-    <HRLayout title={t('hr.pages.offers.title')} subtitle={t('hr.pages.offers.subtitle')}>
+    <div className="space-y-6">
       <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {offerApplications.length}</div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -147,7 +142,7 @@ const HROffers = () => {
           </TableBody>
         </Table>
       </div>
-    </HRLayout>
+    </div>
   );
 };
 

@@ -183,7 +183,7 @@ const HRTimeTracking = () => {
 
   return (
     <HRLayout title={t('hr.pages.timeTracking.title')} subtitle={t('hr.pages.timeTracking.subtitle')}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {records?.length || 0}</div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -270,7 +270,7 @@ const HRTimeTracking = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -310,18 +310,17 @@ const HRTimeTracking = () => {
                     )}
                     <Button size="sm" variant="outline" onClick={() => startEdit(record)}>{t('hr.common.edit')}</Button>
                     {isSenior && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.timeTracking.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(record.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.timeTracking.deleteConfirm'))) {
+                            deleteMutation.mutate(record.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
                     )}
                   </div>
                 </TableCell>

@@ -75,15 +75,27 @@ class Department(SoftDeleteMixin, models.Model):
     """Отдел компании."""
     name = models.CharField('Название', max_length=200)
     description = models.TextField('Описание', blank=True)
+    index = models.PositiveIntegerField(
+        'Индекс', unique=True, editable=False, null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Отдел'
         verbose_name_plural = 'Отделы'
-        ordering = ['name']
+        ordering = ['index', 'name']
+
+    def save(self, *args, **kwargs):
+        if self.index is None:
+            max_idx = (
+                Department.all_objects
+                .aggregate(models.Max('index'))['index__max']
+            ) or 0
+            self.index = max_idx + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f'{self.index}. {self.name}'
 
 
 class Position(models.Model):
@@ -97,14 +109,39 @@ class Position(models.Model):
         related_name='positions',
         verbose_name='Отдел',
     )
+    index = models.CharField(
+        'Индекс', max_length=20, unique=True, editable=False,
+        null=True, blank=True,
+    )
 
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
-        ordering = ['title']
+        ordering = ['index', 'title']
+
+    def save(self, *args, **kwargs):
+        if not self.index and self.department_id:
+            dept_index = self.department.index or 0
+            max_sub = (
+                Position.objects
+                .filter(department=self.department)
+                .exclude(pk=self.pk)
+                .aggregate(models.Max('index'))['index__max']
+            )
+            if max_sub:
+                # Extract the sub-number after the dot
+                try:
+                    sub = int(max_sub.rsplit('.', 1)[-1])
+                except (ValueError, IndexError):
+                    sub = 0
+            else:
+                sub = 0
+            self.index = f'{dept_index}.{sub + 1}'
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title
+        prefix = f'{self.index} ' if self.index else ''
+        return f'{prefix}{self.title}'
 
 
 class Employee(SoftDeleteMixin, models.Model):
@@ -137,7 +174,6 @@ class Employee(SoftDeleteMixin, models.Model):
         related_name='employees',
         verbose_name='Отдел',
     )
-    phone = models.CharField('Телефон', max_length=30, blank=True)
     date_hired = models.DateField('Дата приёма', null=True, blank=True)
     date_dismissed = models.DateField('Дата увольнения', null=True, blank=True)
     status = models.CharField(

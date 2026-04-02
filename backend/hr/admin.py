@@ -3,6 +3,7 @@ from .models import (
     Department, Position, Employee, Vacancy, Application,
     TimeTracking, Document, HRActionLog,
 )
+from .department_files import DepartmentFolder, DepartmentFile
 
 
 @admin.register(Department)
@@ -80,3 +81,19 @@ class HRActionLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+@admin.register(DepartmentFolder)
+class DepartmentFolderAdmin(admin.ModelAdmin):
+    list_display = ('department', 'created_at')
+    list_select_related = ('department',)
+
+
+@admin.register(DepartmentFile)
+class DepartmentFileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'folder', 'file_size', 'uploaded_by', 'created_at')
+    list_filter = ('folder__department',)
+    search_fields = ('name',)
+    raw_id_fields = ('uploaded_by',)
+    list_select_related = ('folder__department', 'uploaded_by')
+

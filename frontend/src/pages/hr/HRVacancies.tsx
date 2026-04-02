@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/client';
-import HRLayout from '@/components/hr/HRLayout';
+import { Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -141,28 +141,27 @@ const HRVacancies = () => {
 
   if (isLoading) {
     return (
-      <HRLayout title={t('hr.pages.vacancies.title')} subtitle={t('hr.pages.vacancies.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
     );
   }
   if (error) {
     return (
-      <HRLayout title={t('hr.pages.vacancies.title')} subtitle={t('hr.pages.vacancies.subtitle')}>
-        <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
-          {t('hr.pages.vacancies.error')}
-        </div>
-      </HRLayout>
+      <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
+        {t('hr.pages.vacancies.error')}
+      </div>
     );
   }
 
   return (
-    <HRLayout title={t('hr.pages.vacancies.title')} subtitle={t('hr.pages.vacancies.subtitle')}>
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {vacancies?.length || 0}</div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={startCreate}>{t('hr.pages.vacancies.create')}</Button>
+            <Button onClick={startCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t('hr.pages.vacancies.actions.add')}
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -233,7 +232,7 @@ const HRVacancies = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -273,8 +272,7 @@ const HRVacancies = () => {
                         size="sm"
                         variant="destructive"
                         onClick={() => {
-                          if (confirm(t('hr.pages.vacancies.deleteConfirm')))
-                          {
+                          if (confirm(t('hr.pages.vacancies.deleteConfirm'))) {
                             deleteMutation.mutate(vacancy.id);
                           }
                         }}
@@ -289,7 +287,7 @@ const HRVacancies = () => {
           </TableBody>
         </Table>
       </div>
-    </HRLayout>
+    </div>
   );
 };
 

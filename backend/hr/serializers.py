@@ -7,6 +7,7 @@ from .models import (
     EmployeeAccount, _generate_password,
 )
 from .roles import is_senior_hr
+from mainView.models import Profile
 
 User = get_user_model()
 
@@ -32,18 +33,20 @@ VACANCY_SALARY_FIELDS = frozenset({
 })
 
 
-class DepartmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = '__all__'
-
-
 class PositionSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
 
     class Meta:
         model = Position
-        fields = ['id', 'title', 'department', 'department_name']
+        fields = ['id', 'title', 'department', 'department_name', 'index']
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    positions = PositionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Department
+        fields = ['id', 'name', 'description', 'index', 'positions', 'created_at']
 
 
 class EmployeeListSerializer(serializers.ModelSerializer):
@@ -53,6 +56,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     position_title = serializers.CharField(source='position.title', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
+    phone = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -63,7 +67,16 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         ]
 
     def get_full_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
+        parts = [obj.user.last_name, obj.user.first_name]
+        if hasattr(obj.user, 'profile') and obj.user.profile.patronymic:
+            parts.append(obj.user.profile.patronymic)
+        full = " ".join(filter(None, parts)).strip()
+        return full or obj.user.username
+
+    def get_phone(self, obj):
+        if hasattr(obj.user, 'profile'):
+            return obj.user.profile.phone or ''
+        return ''
 
 
 class EmployeeDetailSerializer(serializers.ModelSerializer):
@@ -72,6 +85,7 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     position_title = serializers.CharField(source='position.title', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
 
     # ALL model fields — sensitive ones will be stripped dynamically.
     class Meta:
@@ -92,7 +106,36 @@ class EmployeeDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
     def get_full_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
+        parts = [obj.user.last_name, obj.user.first_name]
+        if hasattr(obj.user, 'profile') and obj.user.profile.patronymic:
+            parts.append(obj.user.profile.patronymic)
+        full = " ".join(filter(None, parts)).strip()
+        return full or obj.user.username
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['phone'] = ''
+        if hasattr(instance, 'user') and instance.user and hasattr(instance.user, 'profile'):
+            ret['phone'] = instance.user.profile.phone or ''
+        return ret
+
+    def create(self, validated_data):
+        phone = validated_data.pop('phone', None)
+        instance = super().create(validated_data)
+        if phone is not None:
+            profile, _ = Profile.objects.get_or_create(user=instance.user)
+            profile.phone = phone
+            profile.save(update_fields=['phone'])
+        return instance
+
+    def update(self, instance, validated_data):
+        phone = validated_data.pop('phone', None)
+        instance = super().update(instance, validated_data)
+        if phone is not None:
+            profile, _ = Profile.objects.get_or_create(user=instance.user)
+            profile.phone = phone
+            profile.save(update_fields=['phone'])
+        return instance
 
     # ---- Dynamic field stripping ----
     def get_fields(self):

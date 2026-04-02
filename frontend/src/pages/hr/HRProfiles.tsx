@@ -96,12 +96,12 @@ const HRProfiles = () => {
     );
   });
 
-  if (isLoading) return <HRLayout><div className="p-8">{t('hr.common.loading')}</div></HRLayout>;
-  if (error) return <HRLayout><div className="p-8 text-red-500">{t('hr.common.error')}</div></HRLayout>;
+  if (isLoading) return <HRLayout title={t('hr.pages.profiles.title')}><div className="p-8">{t('hr.common.loading')}</div></HRLayout>;
+  if (error) return <HRLayout title={t('hr.pages.profiles.title')}><div className="p-8 text-red-500">{t('hr.common.error')}</div></HRLayout>;
 
   return (
-    <HRLayout>
-      <div className="flex justify-between items-center mb-6">
+    <HRLayout title={t('hr.pages.profiles.title')}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h2 className="text-2xl font-bold">{t('hr.pages.profiles.title')}</h2>
       </div>
 
@@ -114,7 +114,7 @@ const HRProfiles = () => {
         />
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

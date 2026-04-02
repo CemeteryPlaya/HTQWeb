@@ -1,11 +1,11 @@
 // TODO: Когда будет реализована панель администратора, данные будут загружаться через API.
 // Текущие данные — статичные заглушки с i18n ключами для поддержки мультиязычности.
 
-import panels1 from '@/assets/panels1.webp';
-import panels2 from '@/assets/panels2.webp';
-import panels3 from '@/assets/panels3.jpeg';
-import panels4 from '@/assets/panels4.png';
-import heroSolar from '@/assets/hero-solar.jpg';
+const panels1 = '/images/panels1.webp';
+const panels2 = '/images/panels2.webp';
+const panels3 = '/images/panels3.webp';
+const panels4 = '/images/panels4.webp';
+const heroSolar = '/images/hero-solar.webp';
 
 export interface Project {
   id: number;

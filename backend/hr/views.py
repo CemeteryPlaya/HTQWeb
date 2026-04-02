@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from .models import (
     Department, Position, Employee, Vacancy, Application,
@@ -79,6 +80,11 @@ class DepartmentViewSet(LoggingMixin, viewsets.ModelViewSet):
     permission_classes = [IsHRManagerOrSuperuser, IsJuniorHRReadOnly, DenyDelete]
     pagination_class = None
     log_target_type = HRActionLog.TargetType.DEPARTMENT
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
 
 
 class PositionViewSet(LoggingMixin, viewsets.ModelViewSet):
@@ -209,9 +215,61 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             'dismissed': qs.filter(status=Employee.Status.DISMISSED).count(),
         })
 
-    @action(detail=False, methods=['get'], url_path='users')
+    @action(detail=False, methods=['get', 'post'], url_path='users', permission_classes=[IsAuthenticated])
     def users(self, request):
-        """Список пользователей для создания сотрудника (без привязки Employee)."""
+        """Список (GET) или создание (POST) пользователей (без привязки Employee)."""
+        if request.method == 'POST':
+            from mainView.models import Profile
+
+            first_name = request.data.get('first_name', '').strip()
+            last_name = request.data.get('last_name', '').strip()
+            patronymic = request.data.get('patronymic', '').strip()
+            email = request.data.get('email', '').strip()
+
+            if not first_name or not last_name or not email:
+                return Response({'detail': 'Имя, Фамилия и Email обязательны.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if User.objects.filter(email=email).exists():
+                return Response({'detail': 'Пользователь с таким email уже существует.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Generate unique username
+            base_username = slugify(f"{first_name}-{last_name}")
+            if not base_username:
+                base_username = 'user'
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}-{counter}"
+                counter += 1
+
+            user = User.objects.create(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            user.set_unusable_password()
+            user.save()
+
+            profile, _ = Profile.objects.get_or_create(user=user)
+            if patronymic:
+                profile.patronymic = patronymic
+                profile.save(update_fields=['patronymic'])
+
+            parts = [user.last_name, user.first_name, patronymic]
+            full_name = " ".join(filter(None, parts)).strip()
+
+            return Response({
+                'id': user.id,
+                'full_name': full_name,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'patronymic': patronymic,
+            }, status=status.HTTP_201_CREATED)
+
+        # GET request logic
         search = request.query_params.get('search', '').strip()
         qs = User.objects.filter(is_active=True).exclude(employee__isnull=False)
         if search:
@@ -221,10 +279,13 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 | Q(username__icontains=search)
                 | Q(email__icontains=search)
             )
-        qs = qs.order_by('first_name', 'last_name', 'username')
+        qs = qs.order_by('last_name', 'first_name', 'username')
         data = []
         for user in qs:
-            full_name = user.get_full_name() or user.username
+            parts = [user.last_name, user.first_name]
+            if hasattr(user, 'profile') and user.profile.patronymic:
+                parts.append(user.profile.patronymic)
+            full_name = " ".join(filter(None, parts)).strip() or user.username
             data.append({
                 'id': user.id,
                 'full_name': full_name,
@@ -310,6 +371,12 @@ class ApplicationViewSet(LoggingMixin, viewsets.ModelViewSet):
             )
             user.set_password(raw_password)
             user.save(update_fields=['password'])
+            
+            # Application users must change their first password
+            from mainView.models import Profile
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.must_change_password = True
+            profile.save(update_fields=['must_change_password'])
         else:
             # Existing user — set a new password so they can log in
             user.set_password(raw_password)
@@ -882,6 +949,11 @@ class EmployeeAccountViewSet(viewsets.ModelViewSet):
         user = account.employee.user
         user.set_password(new_password)
         user.save(update_fields=['password'])
+
+        from mainView.models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.must_change_password = True
+        profile.save(update_fields=['must_change_password'])
 
         log_action(
             request, HRActionLog.ActionType.UPDATE,

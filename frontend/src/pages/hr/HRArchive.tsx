@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/client';
@@ -81,7 +81,7 @@ const HRArchive = () => {
       setPdfFieldsLoading(true);
       api.get(`hr/documents/${doc.id}/pdf-fields/`).then((res) => {
         setPdfFields(res.data);
-      }).catch(() => {}).finally(() => setPdfFieldsLoading(false));
+      }).catch(() => { }).finally(() => setPdfFieldsLoading(false));
     }
   };
 
@@ -161,63 +161,57 @@ const HRArchive = () => {
     return true;
   };
 
-  const filteredDocuments = useMemo(() => {
-    return documents.filter((doc) => {
-      if (docFilters.employee && !matches(doc.employee_name, docFilters.employee)) return false;
-      if (docFilters.candidate && !matches(doc.application_candidate_name, docFilters.candidate)) return false;
-      if (docFilters.title && !matches(doc.title, docFilters.title)) return false;
-      if (docFilters.file && !matches(doc.file, docFilters.file)) return false;
-      if (docFilters.type !== 'all' && doc.doc_type !== docFilters.type) return false;
-      if (docFilters.status !== 'all') {
-        if (docFilters.status === 'none') {
-          if (doc.application_status) return false;
-        } else if (doc.application_status !== docFilters.status) {
-          return false;
-        }
-      }
-      if ((docFilters.dateFrom || docFilters.dateTo) && !inDateRange(doc.created_at, docFilters.dateFrom, docFilters.dateTo)) {
+  const filteredDocuments = documents.filter((doc) => {
+    if (docFilters.employee && !matches(doc.employee_name, docFilters.employee)) return false;
+    if (docFilters.candidate && !matches(doc.application_candidate_name, docFilters.candidate)) return false;
+    if (docFilters.title && !matches(doc.title, docFilters.title)) return false;
+    if (docFilters.file && !matches(doc.file, docFilters.file)) return false;
+    if (docFilters.type !== 'all' && doc.doc_type !== docFilters.type) return false;
+    if (docFilters.status !== 'all') {
+      if (docFilters.status === 'none') {
+        if (doc.application_status) return false;
+      } else if (doc.application_status !== docFilters.status) {
         return false;
       }
-      return true;
-    });
-  }, [documents, docFilters]);
+    }
+    if ((docFilters.dateFrom || docFilters.dateTo) && !inDateRange(doc.created_at, docFilters.dateFrom, docFilters.dateTo)) {
+      return false;
+    }
+    return true;
+  });
 
-  const sortedDocuments = useMemo(() => {
-    const list = [...filteredDocuments];
-    list.sort((a, b) => {
-      let left = '';
-      let right = '';
-      if (docSort.key === 'employee') {
-        left = a.employee_name || '';
-        right = b.employee_name || '';
-      } else if (docSort.key === 'candidate') {
-        left = a.application_candidate_name || '';
-        right = b.application_candidate_name || '';
-      } else if (docSort.key === 'title') {
-        left = a.title || '';
-        right = b.title || '';
-      } else if (docSort.key === 'type') {
-        left = a.doc_type || '';
-        right = b.doc_type || '';
-      } else if (docSort.key === 'status') {
-        left = a.application_status || '';
-        right = b.application_status || '';
-      } else if (docSort.key === 'file') {
-        left = a.file || '';
-        right = b.file || '';
-      }
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+    let left = '';
+    let right = '';
+    if (docSort.key === 'employee') {
+      left = a.employee_name || '';
+      right = b.employee_name || '';
+    } else if (docSort.key === 'candidate') {
+      left = a.application_candidate_name || '';
+      right = b.application_candidate_name || '';
+    } else if (docSort.key === 'title') {
+      left = a.title || '';
+      right = b.title || '';
+    } else if (docSort.key === 'type') {
+      left = a.doc_type || '';
+      right = b.doc_type || '';
+    } else if (docSort.key === 'status') {
+      left = a.application_status || '';
+      right = b.application_status || '';
+    } else if (docSort.key === 'file') {
+      left = a.file || '';
+      right = b.file || '';
+    }
 
-      if (docSort.key === 'date') {
-        const leftDate = new Date(a.created_at).getTime();
-        const rightDate = new Date(b.created_at).getTime();
-        return docSort.direction === 'asc' ? leftDate - rightDate : rightDate - leftDate;
-      }
+    if (docSort.key === 'date') {
+      const leftDate = new Date(a.created_at).getTime();
+      const rightDate = new Date(b.created_at).getTime();
+      return docSort.direction === 'asc' ? leftDate - rightDate : rightDate - leftDate;
+    }
 
-      const result = left.localeCompare(right, undefined, { sensitivity: 'base' });
-      return docSort.direction === 'asc' ? result : -result;
-    });
-    return list;
-  }, [filteredDocuments, docSort]);
+    const result = left.localeCompare(right, undefined, { sensitivity: 'base' });
+    return docSort.direction === 'asc' ? result : -result;
+  });
 
   const toggleSort = (key: DocSortKey) => {
     setDocSort((prev) => {
@@ -275,8 +269,8 @@ const HRArchive = () => {
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border">
-        <div className="px-4 pt-4 text-sm font-medium">{t('hr.pages.archive.sections.applications')}</div>
+      <div className="bg-card rounded-2xl border overflow-x-auto">
+        <div className="px-4 pt-4 text-sm font-medium min-w-max">{t('hr.pages.archive.sections.applications')}</div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -308,8 +302,8 @@ const HRArchive = () => {
         </Table>
       </div>
 
-      <div className="bg-card rounded-2xl border">
-        <div className="px-4 pt-4 text-sm font-medium">{t('hr.pages.archive.sections.documents')}</div>
+      <div className="bg-card rounded-2xl border overflow-x-auto">
+        <div className="px-4 pt-4 text-sm font-medium min-w-max">{t('hr.pages.archive.sections.documents')}</div>
         <div className="px-4 pb-4 pt-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Input

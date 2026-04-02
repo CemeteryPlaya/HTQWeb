@@ -27,7 +27,9 @@ class Profile(models.Model):
     bio = models.TextField(max_length=1000, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     patronymic = models.CharField(max_length=100, blank=True)
+    phone = models.CharField('Телефон', max_length=30, blank=True)
     settings = models.JSONField(default=dict, blank=True)
+    must_change_password = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

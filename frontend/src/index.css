@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 
 @tailwind base;
 @tailwind components;
@@ -176,13 +176,12 @@
   /* Smooth page transition when switching language */
   .language-transition {
     transition: opacity 320ms ease, filter 320ms ease, transform 320ms ease;
-    will-change: opacity, filter, transform, box-shadow;
   }
 
   .language-changing {
+    will-change: opacity, filter, transform, box-shadow;
     opacity: 0.94;
     filter: blur(1.5px);
-    /* removed transform: scale(...) so fixed-position elements (header) remain fixed to viewport */
     box-shadow: 0 0 30px hsl(var(--primary) / 0.45), 0 0 60px hsl(var(--primary) / 0.25);
   }
 

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Leaf, Mail, MapPin, Phone } from 'lucide-react';
-import logo from '@/assets/logo.png';
+
+const logo = '/images/logo.webp';
 
 export const Footer = () => {
   const { t } = useTranslation();
@@ -29,12 +30,12 @@ export const Footer = () => {
           <div className="lg:col-span-1">
             {/* Brand */}<a href="#" className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+                <img src={logo} alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
               </div>
               <div>
                 <span className="font-display font-bold text-xl text-background">Hi-Tech Group</span>
               </div>
-            {/* Brand */}</a>
+              {/* Brand */}</a>
             <p className="text-background/60 text-sm leading-relaxed mb-6">
               {t('footer.tagline')}
             </p>

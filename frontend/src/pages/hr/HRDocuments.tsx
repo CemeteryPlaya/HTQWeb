@@ -144,7 +144,7 @@ const HRDocuments = () => {
       setPdfFieldsLoading(true);
       api.get(`hr/documents/${doc.id}/pdf-fields/`).then((res) => {
         setPdfFields(res.data);
-      }).catch(() => {}).finally(() => setPdfFieldsLoading(false));
+      }).catch(() => { }).finally(() => setPdfFieldsLoading(false));
     }
   };
 
@@ -175,7 +175,7 @@ const HRDocuments = () => {
 
   return (
     <HRLayout title={t('hr.pages.documents.title')} subtitle={t('hr.pages.documents.subtitle')}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {documents?.length || 0}</div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -308,7 +308,7 @@ const HRDocuments = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border">
+      <div className="bg-card rounded-2xl border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -335,18 +335,17 @@ const HRDocuments = () => {
                     </a>
                     <Button size="sm" variant="outline" onClick={() => startEdit(doc)}>{t('hr.common.edit')}</Button>
                     {isSenior && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.documents.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(doc.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.documents.deleteConfirm'))) {
+                            deleteMutation.mutate(doc.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
                     )}
                   </div>
                 </TableCell>

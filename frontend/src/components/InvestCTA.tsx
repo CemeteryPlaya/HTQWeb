@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowRight, Leaf, TrendingUp, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
-import panels13 from '@/assets/panels13.jpeg';
+
+const panels13 = '/images/panels13.webp';
 
 export const InvestCTA = () => {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export const InvestCTA = () => {
         <img
           src={panels13}
           alt="Wind turbines"
+          loading="lazy"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/85 to-primary/70" />

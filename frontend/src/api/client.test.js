@@ -23,7 +23,11 @@ describe('API Client', () => {
         // If we mock the adapter to return success, we can check the config passed to it.
 
         // Simplest test: check if baseURL is correct
-        expect(api.defaults.baseURL).toBe('http://localhost:8000/api/');
+        expect(api.defaults.baseURL).toMatch(/\/api\/$/);
+
+        // Check if ngrok-skip-browser-warning header is set
+        // In Axios 1.x, headers passed to create() are typically in defaults.headers
+        expect(api.defaults.headers['ngrok-skip-browser-warning']).toBe('true');
 
         localStorage.removeItem('access');
     });
