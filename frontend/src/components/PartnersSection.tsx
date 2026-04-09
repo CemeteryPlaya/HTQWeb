@@ -1,21 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import risenLogo from '@/assets/risenLogo.svg';
-import sepcoLogo from '@/assets/sepcoLogo.svg';
-import tbeaLogo from '@/assets/tbeaLogo.svg';
-import huaweiLogo from '@/assets/huaweiLogo.svg';
-import trinaSolarLogo from '@/assets/trinaSolarLogo.svg';
-import unitedGreenLogo from '@/assets/unitedGreenLogo.svg';
-import carerLogo from '@/assets/carerLogo.svg';
 
 const partners = [
-  { name: 'Risen', logo: risenLogo },
-  { name: 'United Green', logo: unitedGreenLogo },
-  { name: 'Huawei', logo: huaweiLogo },
-  { name: 'Trina Solar', logo: trinaSolarLogo },
-  { name: 'Carer', logo: carerLogo },
-  { name: 'TBEA', logo: tbeaLogo },
-  { name: 'SEPCO', logo: sepcoLogo },
+  { name: 'Risen', logo: '/logos/risenLogo.webp' },
+  { name: 'United Green', logo: '/logos/unitedGreenLogo.webp' },
+  { name: 'Huawei', logo: '/logos/huaweiLogo.webp' },
+  { name: 'Trina Solar', logo: '/logos/trinaSolarLogo.webp' },
+  { name: 'Carer', logo: '/logos/carerLogo.svg' },
+  { name: 'TBEA', logo: '/logos/tbeaLogo.webp' },
+  { name: 'SEPCO', logo: '/logos/sepcoLogo.webp' },
 ];
 
 export const PartnersSection = () => {
@@ -70,6 +63,7 @@ export const PartnersSection = () => {
                 <img
                   src={partner.logo}
                   alt={partner.name}
+                  loading="lazy"
                   className="h-12 lg:h-16 w-auto object-contain"
                 />
               </div>

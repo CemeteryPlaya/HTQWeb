@@ -10,20 +10,29 @@ import { ProfileHeader } from '../components/profile/ProfileHeader';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import { ProfileForm } from '../components/profile/ProfileForm';
 import { ProfileAvatar } from '../components/profile/ProfileAvatar';
+import { CalendarWidget } from '../components/calendar/CalendarWidget';
 import { UserProfile, ProfileFormData } from '../types/userProfile';
+import {
+    clearAuthStorage,
+    readCachedProfile,
+    writeCachedProfile,
+} from '@/lib/auth/profileStorage';
 
 const MyProfile = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    const { data: profile, isLoading, error } = useQuery({
+    const { data: serverProfile, isLoading, error } = useQuery({
         queryKey: ['profile'],
         queryFn: async () => {
             const res = await api.get<UserProfile>('v1/profile/me/');
+            writeCachedProfile(res.data);
             return res.data;
         }
     });
+
+    const profile = serverProfile || readCachedProfile();
 
     const updateProfileMutation = useMutation({
         mutationFn: async (data: Partial<UserProfile> & { avatar?: File }) => {
@@ -33,6 +42,7 @@ const MyProfile = () => {
             if (data.firstName !== undefined) formData.append('firstName', data.firstName);
             if (data.lastName !== undefined) formData.append('lastName', data.lastName);
             if (data.patronymic !== undefined) formData.append('patronymic', data.patronymic);
+            if (data.phone !== undefined) formData.append('phone', data.phone);
             if (data.bio !== undefined) formData.append('bio', data.bio);
             if (data.settings) formData.append('settings', JSON.stringify(data.settings));
             if (data.avatar) formData.append('avatar', data.avatar);
@@ -62,9 +72,7 @@ const MyProfile = () => {
     };
 
     const handleLogout = async () => {
-        // Clear tokens
-        localStorage.removeItem('access');
-        localStorage.removeItem('refresh');
+        clearAuthStorage();
 
         // Clear axios default header if client exists
         try {
@@ -83,8 +91,8 @@ const MyProfile = () => {
         navigate('/login');
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center">{t('profile.loading')}</div>;
-    if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{t('profile.error')}</div>;
+    if (isLoading && !profile) return <div className="min-h-screen flex items-center justify-center">{t('profile.loading')}</div>;
+    if (error && !profile) return <div className="min-h-screen flex items-center justify-center text-red-500">{t('profile.error')}</div>;
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -121,6 +129,11 @@ const MyProfile = () => {
                             </div>
 
                             <ProfileHeader profile={profile} />
+
+                            <div className="bg-card rounded-3xl border p-6 shadow-sm overflow-hidden">
+                                <h3 className="text-xl font-bold mb-4 px-2">{t('hr.calendar.title')}</h3>
+                                <CalendarWidget compact initialView="month" />
+                            </div>
                         </div>
                     </div>
                 )}

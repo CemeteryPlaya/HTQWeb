@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Target, Shield, Lightbulb } from 'lucide-react';
 import { Button } from './ui/button';
-import panels4 from '@/assets/panels4.png';
+
+const panels4 = '/images/panels4.webp';
 
 export const MissionSection = () => {
   const { t } = useTranslation();
@@ -34,6 +35,7 @@ export const MissionSection = () => {
               <img
                 src={panels4}
                 alt={t('mission.title')}
+                loading="lazy"
                 className="w-full h-[500px] object-cover"
               />
             </div>

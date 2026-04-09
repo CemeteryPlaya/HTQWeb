@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UserProfile, ProfileFormData } from '../../types/userProfile';
@@ -24,6 +25,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
         firstName: z.string().max(100).optional(),
         lastName: z.string().max(100).optional(),
         patronymic: z.string().max(100).optional(),
+        phone: z.string().max(30).optional(),
         display_name: z.string().min(2, t('profile.errors.nameMin')).max(100),
         bio: z.string().max(1000).optional(),
         settings: z.object({
@@ -38,6 +40,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
             firstName: profile.firstName || "",
             lastName: profile.lastName || "",
             patronymic: profile.patronymic || "",
+            phone: profile.phone || "",
             display_name: profile.display_name || "",
             bio: profile.bio || "",
             settings: profile.settings || {}
@@ -95,19 +98,34 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSubmit, isL
                     />
                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="display_name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>{t('profile.displayName')}</FormLabel>
-                            <FormControl>
-                                <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="display_name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('profile.displayName')}</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Телефон</FormLabel>
+                                <FormControl>
+                                    <PhoneInput {...field} value={field.value || ''} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <FormField
                     control={form.control}

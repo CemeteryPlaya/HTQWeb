@@ -1,223 +1,94 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import React, { Component, ErrorInfo, ReactNode, Suspense } from "react";
-import Index from "./pages/Index";
-import Projects from "./pages/Projects";
-import Services from "./pages/Services";
-import IntegrationDemo from "./pages/IntegrationDemo";
-import NotFound from "./pages/NotFound";
-import Contacts from "./pages/Contacts";
-import News from "./pages/News";
-import NewsDetail from "./pages/NewsDetail";
-import AdminNews from "./pages/AdminNews";
-import AdminContacts from "./pages/AdminContacts";
-import AdminProjects from "./pages/AdminProjects";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import MyProfile from "./pages/MyProfile";
-import AdminUsers from "./pages/AdminUsers";
-import RequireAuth from "./components/RequireAuth";
-import HREmployees from "./pages/hr/HREmployees";
-import HRDepartments from "./pages/hr/HRDepartments";
-import HRPositions from "./pages/hr/HRPositions";
-import HRTimeTracking from "./pages/hr/HRTimeTracking";
-import HRVacancies from "./pages/hr/HRVacancies";
-import HRApplications from "./pages/hr/HRApplications";
-import HRDocuments from "./pages/hr/HRDocuments";
-import HRLogs from "./pages/hr/HRLogs";
-import HRProfiles from "./pages/hr/HRProfiles";
-import HRHistory from "./pages/hr/HRHistory";
-import HROffers from "./pages/hr/HROffers";
-import HRArchive from "./pages/hr/HRArchive";
-import HRAccounts from "./pages/hr/HRAccounts";
-import HRTasks from "./pages/hr/HRTasks";
-import HRTaskDetail from "./pages/hr/HRTaskDetail";
-import HRRoadmap from "./pages/hr/HRRoadmap";
-import HRReports from "./pages/hr/HRReports";
-import AdminRegistrations from "./pages/AdminRegistrations";
+import { Suspense, type ReactNode, useEffect, useState } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import Index from '@/pages/Index';
+
+import { AppErrorBoundary } from '@/app/components/AppErrorBoundary';
+import { PageLoader } from '@/app/components/PageLoader';
+import { lazyPages } from '@/app/routing/lazyPages';
+import { registerRoutePrefetch } from '@/app/routing/prefetch';
+import { protectedRoutes, publicRoutes } from '@/app/routing/routeDefinitions';
+import type { RouteConfig } from '@/app/routing/types';
+import { getAccessToken } from '@/lib/auth/profileStorage';
+import { ConferenceNotifier } from '@/components/ConferenceNotifier';
+
+registerRoutePrefetch();
 
 const queryClient = new QueryClient();
+const DeferredToaster = lazyPages.Toaster;
+const DeferredSonner = lazyPages.Sonner;
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
-          <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg border border-red-200">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-            <p className="text-gray-700 mb-4">The application crashed while rendering this page.</p>
-            <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-40 mb-4">
-              {this.state.error?.toString()}
-            </pre>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-2 px-4 bg-red-600 text-white rounded hover:bg-red-700 transition"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <ErrorBoundary>
-        <BrowserRouter>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Application...</div>}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/news/:slug" element={<NewsDetail />} />
-              <Route path="/manage/news" element={<AdminNews />} />
-              <Route path="/manage/contacts" element={
-                <RequireAuth>
-                  <AdminContacts />
-                </RequireAuth>
-              } />
-              <Route path="/manage/projects" element={
-                <RequireAuth>
-                  <AdminProjects />
-                </RequireAuth>
-              } />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/demo" element={<IntegrationDemo />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/myprofile" element={
-                <RequireAuth>
-                  <MyProfile />
-                </RequireAuth>
-              } />
-              <Route path="/admin/users" element={
-                <RequireAuth>
-                  <AdminUsers />
-                </RequireAuth>
-              } />
-              {/* HR Routes */}
-              <Route path="/hr/employees" element={
-                <RequireAuth>
-                  <HREmployees />
-                </RequireAuth>
-              } />
-              <Route path="/hr/departments" element={
-                <RequireAuth>
-                  <HRDepartments />
-                </RequireAuth>
-              } />
-              <Route path="/hr/positions" element={
-                <RequireAuth>
-                  <HRPositions />
-                </RequireAuth>
-              } />
-              <Route path="/hr/time-tracking" element={
-                <RequireAuth>
-                  <HRTimeTracking />
-                </RequireAuth>
-              } />
-              <Route path="/hr/vacancies" element={
-                <RequireAuth>
-                  <HRVacancies />
-                </RequireAuth>
-              } />
-              <Route path="/hr/applications" element={
-                <RequireAuth>
-                  <HRApplications />
-                </RequireAuth>
-              } />
-              <Route path="/hr/offers" element={
-                <RequireAuth>
-                  <HROffers />
-                </RequireAuth>
-              } />
-              <Route path="/hr/documents" element={
-                <RequireAuth>
-                  <HRDocuments />
-                </RequireAuth>
-              } />
-              <Route path="/hr/logs" element={
-                <RequireAuth>
-                  <HRLogs />
-                </RequireAuth>
-              } />
-              <Route path="/hr/profiles" element={
-                <RequireAuth>
-                  <HRProfiles />
-                </RequireAuth>
-              } />
-              <Route path="/hr/history" element={
-                <RequireAuth>
-                  <HRHistory />
-                </RequireAuth>
-              } />
-              <Route path="/hr/archive" element={
-                <RequireAuth>
-                  <HRArchive />
-                </RequireAuth>
-              } />
-              <Route path="/hr/accounts" element={
-                <RequireAuth>
-                  <HRAccounts />
-                </RequireAuth>
-              } />
-              <Route path="/tasks" element={
-                <RequireAuth>
-                  <HRTasks />
-                </RequireAuth>
-              } />
-              <Route path="/tasks/:id" element={
-                <RequireAuth>
-                  <HRTaskDetail />
-                </RequireAuth>
-              } />
-              <Route path="/tasks/roadmap" element={
-                <RequireAuth>
-                  <HRRoadmap />
-                </RequireAuth>
-              } />
-              <Route path="/tasks/reports" element={
-                <RequireAuth>
-                  <HRReports />
-                </RequireAuth>
-              } />
-              <Route path="/admin/registrations" element={
-                <RequireAuth>
-                  <AdminRegistrations />
-                </RequireAuth>
-              } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </ErrorBoundary>
-    </TooltipProvider>
-  </QueryClientProvider>
+const SuspensePage = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
 );
+
+const RouteElement = ({ route }: { route: RouteConfig }) => {
+  const Component = route.component;
+  const content = <Component />;
+
+  if (!route.requiresAuth) {
+    return <SuspensePage>{content}</SuspensePage>;
+  }
+
+  const RequireAuth = lazyPages.RequireAuth;
+  return (
+    <SuspensePage>
+      <RequireAuth>{content}</RequireAuth>
+    </SuspensePage>
+  );
+};
+
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Index />} />
+
+    {publicRoutes.map((route) => (
+      <Route key={route.path} path={route.path} element={<RouteElement route={route} />} />
+    ))}
+
+    {protectedRoutes.map((route) => (
+      <Route key={route.path} path={route.path} element={<RouteElement route={route} />} />
+    ))}
+
+    <Route path="*" element={<SuspensePage><lazyPages.NotFound /></SuspensePage>} />
+  </Routes>
+);
+
+const App = () => {
+  const hasAccessToken = Boolean(getAccessToken());
+  const BottomNav = lazyPages.BottomNav;
+  const [showDeferredUi, setShowDeferredUi] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setShowDeferredUi(true);
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {showDeferredUi && (
+        <Suspense fallback={null}>
+          <DeferredToaster />
+          <DeferredSonner />
+        </Suspense>
+      )}
+      <AppErrorBoundary>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AppRoutes />
+          {hasAccessToken && (
+            <Suspense fallback={null}>
+              <BottomNav />
+              <ConferenceNotifier />
+            </Suspense>
+          )}
+        </BrowserRouter>
+      </AppErrorBoundary>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

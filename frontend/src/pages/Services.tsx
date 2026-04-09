@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { services } from '@/data/services';
 import { useLanguageTransition } from '@/hooks/use-language-transition';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 const iconMap: Record<string, LucideIcon> = {
   ClipboardCheck,
@@ -46,9 +47,14 @@ const Services = () => {
                   className={`grid lg:grid-cols-2 gap-8 items-center ${index % 2 !== 0 ? 'lg:[&>*:first-child]:order-2' : ''}`}
                 >
                   <div className="relative rounded-2xl overflow-hidden shadow-elevated h-[350px]">
-                    <img
+                    <OptimizedImage
                       src={service.image}
                       alt={t(service.titleKey)}
+                      width={800}
+                      height={350}
+                      srcSet={`${service.image.replace('.webp', '-400w.webp')} 400w, ${service.image} 800w`}
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent" />
@@ -57,9 +63,9 @@ const Services = () => {
                     <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
                       <Icon size={28} className="text-primary-foreground" />
                     </div>
-                    <h3 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
                       {t(service.titleKey)}
-                    </h3>
+                    </h2>
                     <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                       {t(service.descKey)}
                     </p>

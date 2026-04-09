@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import panels5 from '@/assets/panels5.png';
-import panels6 from '@/assets/panels6.png';
-import panels7 from '@/assets/panels7.jpeg';
+
+const panels5 = '/images/panels5.webp';
+const panels6 = '/images/panels6.webp';
+const panels7 = '/images/panels7.webp';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 

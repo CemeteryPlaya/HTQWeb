@@ -1,8 +1,7 @@
 import { ChevronDown, Zap, RefreshCw, FileCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Button } from './ui/button';
-import heroImage from '@/assets/hero-solar.jpg';
+import { OptimizedImage } from './OptimizedImage';
 
 export const HeroSection = () => {
   const { t } = useTranslation();
@@ -29,9 +28,17 @@ export const HeroSection = () => {
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
+        <OptimizedImage
+          src="/images/hero-solar-1024w.webp"
           alt="Solar panels field"
+          width={1024}
+          height={581}
+          srcSet="/images/hero-solar-640w.webp 640w, /images/hero-solar-1024w.webp 1024w"
+          preferAvif={false}
+          sizes="100vw"
+          fetchPriority="high"
+          loading="eager"
+          decoding="sync"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-transparent" />
@@ -61,14 +68,14 @@ export const HeroSection = () => {
           {/* Buttons */}
           <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <a href="/#contact">
-              <Button className="btn-primary rounded-full text-lg px-8 py-6 shadow-soft hover:shadow-lg">
+              <span className="btn-primary inline-flex h-14 items-center justify-center rounded-full px-8 py-6 text-lg shadow-soft hover:shadow-lg">
                 {t('hero.contact_us')}
-              </Button>
+              </span>
             </a>
             <Link to="/projects">
-              <Button className="btn-primary rounded-full text-lg px-8 py-6 shadow-soft hover:shadow-lg">
+              <span className="btn-primary inline-flex h-14 items-center justify-center rounded-full px-8 py-6 text-lg shadow-soft hover:shadow-lg">
                 {t('hero.our_projects')}
-              </Button>
+              </span>
             </Link>
           </div>
         </div>

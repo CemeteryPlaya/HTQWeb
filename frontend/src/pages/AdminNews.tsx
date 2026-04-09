@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '@/api/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Header } from '@/components/Header';
+
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const fetchNews = async () => {
   const res = await api.get('news/');
@@ -12,6 +18,7 @@ const fetchNews = async () => {
 
 const AdminNews = () => {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['newsList'],
     queryFn: fetchNews,
@@ -22,22 +29,21 @@ const AdminNews = () => {
   const [query, setQuery] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const newsList = Array.isArray(data) ? data : [];
   const publishedCount = newsList.filter((item) => item.published).length;
   const draftCount = newsList.length - publishedCount;
 
-  const filteredNews = useMemo(() => {
-    return newsList.filter((item) => {
-      const matchesQuery = `${item.title} ${item.slug}`.toLowerCase().includes(query.trim().toLowerCase());
-      const matchesStatus = statusFilter === 'all'
-        ? true
-        : statusFilter === 'published'
-          ? item.published
-          : !item.published;
-      return matchesQuery && matchesStatus;
-    });
-  }, [newsList, query, statusFilter]);
+  const filteredNews = newsList.filter((item) => {
+    const matchesQuery = `${item.title} ${item.slug}`.toLowerCase().includes(query.trim().toLowerCase());
+    const matchesStatus = statusFilter === 'all'
+      ? true
+      : statusFilter === 'published'
+        ? item.published
+        : !item.published;
+    return matchesQuery && matchesStatus;
+  });
 
   const save = async () => {
     try {
@@ -59,6 +65,7 @@ const AdminNews = () => {
       setEditing(null);
       setForm({ title: '', slug: '', summary: '', content: '', published: false, image: null });
       setImagePreview(null);
+      setIsDialogOpen(false);
     } catch (err: any) {
       console.error(err);
       const status = err?.response?.status;
@@ -86,12 +93,14 @@ const AdminNews = () => {
       image: null,
     });
     setImagePreview(item.image || null);
+    setIsDialogOpen(true);
   };
 
-  const resetForm = () => {
+  const openCreateDialog = () => {
     setEditing(null);
     setForm({ title: '', slug: '', summary: '', content: '', published: false, image: null });
     setImagePreview(null);
+    setIsDialogOpen(true);
   };
 
   const generateSlug = () => {
@@ -112,103 +121,111 @@ const AdminNews = () => {
   }, [form.image]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,hsl(145_40%_96%),hsl(0_0%_100%)_55%)]">
-      <div className="pointer-events-none absolute -left-24 -top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(42_85%_70%/0.45),transparent_70%)]" />
-      <div className="pointer-events-none absolute -right-20 top-32 h-96 w-96 rounded-full bg-[radial-gradient(circle,hsl(145_45%_40%/0.25),transparent_70%)]" />
+    <div className="min-h-screen flex flex-col bg-[radial-gradient(circle_at_top,hsl(145_40%_96%),hsl(0_0%_100%)_55%)]">
+      <Header />
 
-      <div className="container-custom py-12">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="text-sm uppercase tracking-[0.3em] text-muted-foreground">HR Management</div>
-              <h1 className="font-display text-4xl font-semibold text-foreground">Manage news</h1>
-              <p className="text-muted-foreground">Панель управления публикациями и карточками новостей.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={resetForm}>Новая новость</Button>
-              <Button onClick={save} disabled={saving || !form.title || !form.slug}>
-                {saving ? 'Сохранение...' : editing ? 'Обновить' : 'Опубликовать'}
-              </Button>
-            </div>
+      <main className="relative flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute -left-24 -top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(42_85%_70%/0.45),transparent_70%)]" />
+        <div className="pointer-events-none absolute -right-20 top-32 h-96 w-96 rounded-full bg-[radial-gradient(circle,hsl(145_45%_40%/0.25),transparent_70%)]" />
+
+        <div className="container-custom py-12 pb-24">
+          <div className="mb-6 flex flex-col gap-4">
+            <Link
+              to="/myprofile"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('hr.backToMain', 'Назад в профиль')}
+            </Link>
           </div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:justify-between">
+              <div>
+                <div className="text-sm uppercase tracking-[0.3em] text-muted-foreground">HR Management</div>
+                <h1 className="font-display text-3xl sm:text-4xl font-semibold text-foreground">Manage news</h1>
+                <p className="text-muted-foreground text-sm sm:text-base mt-2">Панель управления публикациями и карточками новостей.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button className="w-full sm:w-auto" onClick={openCreateDialog}>Новая новость</Button>
+              </div>
+            </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
-              <div className="text-sm text-muted-foreground">Всего новостей</div>
-              <div className="mt-2 text-3xl font-semibold">{newsList.length}</div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
+                <div className="text-sm text-muted-foreground">Всего новостей</div>
+                <div className="mt-2 text-3xl font-semibold">{newsList.length}</div>
+              </div>
+              <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
+                <div className="text-sm text-muted-foreground">Опубликовано</div>
+                <div className="mt-2 text-3xl font-semibold text-primary">{publishedCount}</div>
+              </div>
+              <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
+                <div className="text-sm text-muted-foreground">Черновики</div>
+                <div className="mt-2 text-3xl font-semibold text-secondary-foreground">{draftCount}</div>
+              </div>
             </div>
-            <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
-              <div className="text-sm text-muted-foreground">Опубликовано</div>
-              <div className="mt-2 text-3xl font-semibold text-primary">{publishedCount}</div>
-            </div>
-            <div className="rounded-2xl border bg-card/80 p-5 shadow-[var(--shadow-soft)]">
-              <div className="text-sm text-muted-foreground">Черновики</div>
-              <div className="mt-2 text-3xl font-semibold text-secondary-foreground">{draftCount}</div>
-            </div>
-          </div>
 
-          <div className="rounded-2xl border bg-card/70 p-4 shadow-[var(--shadow-soft)]">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 flex-wrap items-center gap-3">
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Поиск по заголовку или slug"
-                  className="md:max-w-sm"
-                />
-                <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-sm">
-                  <button
-                    className={`rounded-full px-3 py-1 ${statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-                    onClick={() => setStatusFilter('all')}
-                  >
-                    Все
-                  </button>
-                  <button
-                    className={`rounded-full px-3 py-1 ${statusFilter === 'published' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-                    onClick={() => setStatusFilter('published')}
-                  >
-                    Опубликовано
-                  </button>
-                  <button
-                    className={`rounded-full px-3 py-1 ${statusFilter === 'draft' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-                    onClick={() => setStatusFilter('draft')}
-                  >
-                    Черновики
-                  </button>
+            <div className="rounded-2xl border bg-card/70 p-4 shadow-[var(--shadow-soft)]">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-1 flex-wrap items-center gap-3">
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Поиск по заголовку или slug"
+                    className="md:max-w-sm"
+                  />
+                  <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-background px-3 py-2 text-sm">
+                    <button
+                      className={`rounded-full px-3 py-1 ${statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                      onClick={() => setStatusFilter('all')}
+                    >
+                      Все
+                    </button>
+                    <button
+                      className={`rounded-full px-3 py-1 ${statusFilter === 'published' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                      onClick={() => setStatusFilter('published')}
+                    >
+                      Опубликовано
+                    </button>
+                    <button
+                      className={`rounded-full px-3 py-1 ${statusFilter === 'draft' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                      onClick={() => setStatusFilter('draft')}
+                    >
+                      Черновики
+                    </button>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Показано: <span className="text-foreground">{filteredNews.length}</span>
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Показано: <span className="text-foreground">{filteredNews.length}</span>
-              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
+          <div className="mt-8 space-y-4">
             {isLoading && <div className="rounded-2xl border bg-card/70 p-6">Загрузка...</div>}
             {!isLoading && filteredNews.length === 0 && (
               <div className="rounded-2xl border bg-card/70 p-8 text-center">
                 <div className="text-lg font-semibold">Новости не найдены</div>
                 <p className="text-muted-foreground">Попробуйте изменить фильтры или создайте новую новость.</p>
-                <Button className="mt-4" onClick={resetForm}>Создать новость</Button>
+                <Button className="mt-4" onClick={openCreateDialog}>Создать новость</Button>
               </div>
             )}
             {!isLoading && filteredNews.map((item: any) => (
               <div key={item.id} className="group rounded-2xl border bg-card/70 p-5 transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-card)]">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-muted">
+                  <div className="flex items-start gap-4 overflow-hidden w-full md:w-auto">
+                    <div className="shrink-0 h-16 w-16 overflow-hidden rounded-xl bg-muted">
                       {item.image ? (
                         <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No image</div>
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
-                        <Badge variant={item.published ? 'default' : 'outline'}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h2 className="text-base sm:text-lg font-semibold text-foreground truncate max-w-full">{item.title}</h2>
+                        <Badge variant={item.published ? 'default' : 'outline'} className="shrink-0">
                           {item.published ? 'Опубликовано' : 'Черновик'}
                         </Badge>
                       </div>
@@ -227,17 +244,20 @@ const AdminNews = () => {
             ))}
           </div>
 
-          <div className="lg:sticky lg:top-6">
-            <div className="rounded-2xl border bg-card/80 p-6 shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">{editing ? 'Редактирование' : 'Создание'}</div>
-                  <h2 className="text-2xl font-semibold">Карточка новости</h2>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+              <DialogHeader>
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:pr-6">
+                  <DialogTitle className="text-xl sm:text-2xl font-semibold">
+                    {editing ? 'Редактирование новости' : 'Карточка новости'}
+                  </DialogTitle>
+                  <Badge variant={form.published ? 'default' : 'outline'}>
+                    {form.published ? 'Публично' : 'Черновик'}
+                  </Badge>
                 </div>
-                <Badge variant={form.published ? 'default' : 'outline'}>{form.published ? 'Публично' : 'Черновик'}</Badge>
-              </div>
+              </DialogHeader>
 
-              <div className="mt-6 grid gap-4">
+              <div className="mt-2 grid gap-4">
                 <label className="grid gap-2 text-sm">
                   Заголовок
                   <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Новая новость" />
@@ -313,13 +333,13 @@ const AdminNews = () => {
                   <Button onClick={save} disabled={saving || !form.title || !form.slug}>
                     {saving ? 'Сохранение...' : editing ? 'Сохранить изменения' : 'Создать новость'}
                   </Button>
-                  <Button variant="outline" onClick={resetForm}>Сбросить</Button>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Отмена</Button>
                 </div>
               </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

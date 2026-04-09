@@ -132,7 +132,7 @@ const HRPositions = () => {
 
   return (
     <HRLayout title={t('hr.pages.positions.title')} subtitle={t('hr.pages.positions.subtitle')}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="text-sm text-muted-foreground">
           {t('hr.common.total')}: {filteredPositions.length}{positions && departmentFilter !== 'all' ? ` / ${positions.length}` : ''}
         </div>
@@ -175,7 +175,7 @@ const HRPositions = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-2xl border mt-6">
+      <div className="bg-card rounded-2xl border mt-6 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -242,18 +242,17 @@ const HRPositions = () => {
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => startEdit(pos)}>{t('hr.common.edit')}</Button>
                     {isSenior && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(t('hr.pages.positions.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(pos.id);
-                        }
-                      }}
-                    >
-                      {t('hr.common.delete')}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(t('hr.pages.positions.deleteConfirm'))) {
+                            deleteMutation.mutate(pos.id);
+                          }
+                        }}
+                      >
+                        {t('hr.common.delete')}
+                      </Button>
                     )}
                   </div>
                 </TableCell>

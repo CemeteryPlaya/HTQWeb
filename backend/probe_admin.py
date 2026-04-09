@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 
 def probe_admin_users():
     client = APIClient()
-    user = User.objects.get(username='Admin55')
+    user = User.objects.get(username='Endmin')
     print(f"Authenticating as {user.username}...")
     client.force_authenticate(user=user)
     
@@ -17,10 +17,13 @@ def probe_admin_users():
     try:
         response = client.get('/api/v1/admin/users/')
         print(f"Status: {response.status_code}")
-        if response.status_code == 500:
-             print("Data:", response.data if hasattr(response, 'data') else "No data")
+        if isinstance(response.data, dict) and 'results' in response.data:
+             print(f"Data count: {response.data.get('count')}")
+             print(f"Results: {len(response.data['results'])} items on this page")
+        elif isinstance(response.data, list):
+             print("Data count:", len(response.data))
         else:
-             print("Data count:", len(response.data) if isinstance(response.data, list) else "Not a list")
+             print("Data:", response.data)
     except Exception as e:
         print(f"Exception: {e}")
         import traceback

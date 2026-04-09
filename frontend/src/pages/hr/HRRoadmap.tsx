@@ -27,30 +27,32 @@ import {
   fetchVersions, createVersion, updateVersion, deleteVersion,
   fetchVersionTasks,
 } from '@/api/tasks';
+import api from '@/api/client';
+import type { UserProfile } from '@/types/userProfile';
 import type { ProjectVersion, VersionStatus, Task, TaskStatus, TaskType } from '@/types/tasks';
 
 /* ---- Config ---- */
 
 const VERSION_STATUS: Record<VersionStatus, { label: string; color: string }> = {
-  planned:     { label: 'Запланирована', color: 'bg-slate-500 text-white' },
-  in_progress: { label: 'В работе',     color: 'bg-blue-600 text-white' },
-  released:    { label: 'Выпущена',     color: 'bg-green-500 text-white' },
-  archived:    { label: 'В архиве',     color: 'bg-gray-400 text-white' },
+  planned: { label: 'Запланирована', color: 'bg-slate-500 text-white' },
+  in_progress: { label: 'В работе', color: 'bg-blue-600 text-white' },
+  released: { label: 'Выпущена', color: 'bg-green-500 text-white' },
+  archived: { label: 'В архиве', color: 'bg-gray-400 text-white' },
 };
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
-  open:        { label: 'Открыта',  color: 'bg-slate-500 text-white' },
+  open: { label: 'Открыта', color: 'bg-slate-500 text-white' },
   in_progress: { label: 'В работе', color: 'bg-blue-600 text-white' },
-  in_review:   { label: 'Ревью',   color: 'bg-purple-500 text-white' },
-  done:        { label: 'Готова',   color: 'bg-green-500 text-white' },
-  closed:      { label: 'Закрыта', color: 'bg-gray-600 text-white' },
+  in_review: { label: 'Ревью', color: 'bg-purple-500 text-white' },
+  done: { label: 'Готова', color: 'bg-green-500 text-white' },
+  closed: { label: 'Закрыта', color: 'bg-gray-600 text-white' },
 };
 
 const TYPE_ICONS: Record<TaskType, React.ReactNode> = {
-  task:    <CheckSquare className="h-4 w-4 text-blue-500" />,
-  bug:     <Bug className="h-4 w-4 text-red-500" />,
-  story:   <BookOpen className="h-4 w-4 text-green-500" />,
-  epic:    <Layers className="h-4 w-4 text-purple-500" />,
+  task: <CheckSquare className="h-4 w-4 text-blue-500" />,
+  bug: <Bug className="h-4 w-4 text-red-500" />,
+  story: <BookOpen className="h-4 w-4 text-green-500" />,
+  epic: <Layers className="h-4 w-4 text-purple-500" />,
   subtask: <ListTodo className="h-4 w-4 text-gray-500" />,
 };
 
@@ -148,7 +150,6 @@ function VersionCard({ version }: { version: ProjectVersion }) {
                   <Link
                     key={task.id}
                     to={`/tasks/${task.id}`}
-                    to={`/tasks/${task.id}`}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
                   >
                     {TYPE_ICONS[task.task_type]}
@@ -186,6 +187,19 @@ const HRRoadmap: React.FC = () => {
     queryKey: ['hr-versions'],
     queryFn: () => fetchVersions(),
   });
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const res = await api.get<UserProfile>('v1/profile/me/');
+      return res.data;
+    }
+  });
+
+  const hasElevatedRoles = profile?.roles?.some((r: string) =>
+    ['staff', 'admin', 'superuser', 'hr_manager', 'senior_hr', 'junior_hr', 'senior_manager', 'junior_manager'].includes(r)
+  );
+  const isRegularEmployee = !!(profile && !hasElevatedRoles);
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<ProjectVersion>) => createVersion(data),
@@ -233,9 +247,11 @@ const HRRoadmap: React.FC = () => {
             </Button>
           </div>
           <div className="flex-1" />
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Новая версия
-          </Button>
+          {!isRegularEmployee && (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Новая версия
+            </Button>
+          )}
         </CardContent>
       </Card>
 

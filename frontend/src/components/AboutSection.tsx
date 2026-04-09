@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Leaf, Sun, Zap } from 'lucide-react';
-import panels1 from '@/assets/panels1.webp';
+
+const panels1 = '/images/panels1.webp';
 
 export const AboutSection = () => {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ export const AboutSection = () => {
               <img
                 src={panels1}
                 alt="Solar Panels"
+                loading="lazy"
                 className="w-full h-[500px] object-cover"
               />
             </div>

@@ -2,11 +2,11 @@
 // когда будет реализована авторизация и доступ администратора.
 // Текущие данные — статичные.
 
-import panels8 from '@/assets/panels8.jpeg';
-import panels9 from '@/assets/panels9.jpeg';
-import panels10 from '@/assets/panels10.jpeg';
-import panels11 from '@/assets/panels11.jpg';
-import panels12 from '@/assets/panels12.jpeg';
+const panels8 = '/images/panels8.webp';
+const panels9 = '/images/panels9.webp';
+const panels10 = '/images/panels10.webp';
+const panels11 = '/images/panels11.webp';
+const panels12 = '/images/panels12.webp';
 
 export interface Service {
   id: number;

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import HRLayout from '@/components/hr/HRLayout';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,7 +62,10 @@ interface EmployeeForm {
 }
 
 const emptyForm: EmployeeForm = {
-  user: '', position: '', department: '', phone: '',
+  user: 'none',
+  position: 'none',
+  department: 'none',
+  phone: '',
   date_hired: '', date_dismissed: '', status: 'active', notes: '',
 };
 
@@ -113,9 +117,9 @@ const HREmployees = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {
-        position: form.position ? Number(form.position) : null,
-        department: form.department ? Number(form.department) : null,
-        phone: form.phone,
+        position: form.position === 'none' ? null : Number(form.position),
+        department: form.department === 'none' ? null : Number(form.department),
+        phone: form.phone || '',
         date_hired: form.date_hired || null,
         date_dismissed: form.date_dismissed || null,
         status: form.status,
@@ -156,22 +160,19 @@ const HREmployees = () => {
   });
 
   /* ---- filtered list ---- */
-  const filtered = useMemo(() => {
-    let list = employees;
-    if (filterStatus !== 'all') list = list.filter((e) => e.status === filterStatus);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e.full_name.toLowerCase().includes(q) ||
-          e.username.toLowerCase().includes(q) ||
-          e.email.toLowerCase().includes(q) ||
-          (e.position_title || '').toLowerCase().includes(q) ||
-          (e.department_name || '').toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [employees, filterStatus, search]);
+  let filtered = employees;
+  if (filterStatus !== 'all') filtered = filtered.filter((e) => e.status === filterStatus);
+  if (search.trim()) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(
+      (e) =>
+        e.full_name.toLowerCase().includes(q) ||
+        e.username.toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q) ||
+        (e.position_title || '').toLowerCase().includes(q) ||
+        (e.department_name || '').toLowerCase().includes(q),
+    );
+  }
 
   /* ---- dialog helpers ---- */
   const openCreate = () => {
@@ -184,9 +185,9 @@ const HREmployees = () => {
   const openEdit = (emp: Employee) => {
     setEditing(emp);
     setForm({
-      user: String(emp.user),
-      position: emp.position ? String(emp.position) : '',
-      department: emp.department ? String(emp.department) : '',
+      user: emp.user ? String(emp.user) : 'none',
+      position: emp.position ? String(emp.position) : 'none',
+      department: emp.department ? String(emp.department) : 'none',
       phone: emp.phone || '',
       date_hired: emp.date_hired || '',
       date_dismissed: emp.date_dismissed || '',
@@ -421,7 +422,7 @@ const HREmployees = () => {
 
             <div className="grid gap-2">
               <Label>{t('hr.employees.col.phone')}</Label>
-              <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+              <PhoneInput value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

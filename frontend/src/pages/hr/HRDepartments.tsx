@@ -3,24 +3,44 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/client';
 import HRLayout from '@/components/hr/HRLayout';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useHRLevel } from '@/hooks/useHRLevel';
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, Building2, Briefcase } from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
+
+interface Position {
+  id: number;
+  title: string;
+  department: number | null;
+  department_name: string;
+  index: string | null;
+}
 
 interface Department {
   id: number;
   name: string;
   description: string;
+  index: number | null;
+  positions: Position[];
   created_at: string;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                         */
+/* ------------------------------------------------------------------ */
 
 const HRDepartments = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { isSenior } = useHRLevel();
+
+  /* ---- Data ---- */
   const { data: departments, isLoading, error } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
@@ -29,81 +49,89 @@ const HRDepartments = () => {
     },
   });
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Department | null>(null);
-  const [form, setForm] = useState({ name: '', description: '' });
+  /* ---- UI State ---- */
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState('');
-  const [sortKey, setSortKey] = useState<'name' | 'created_at'>('created_at');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const saveMutation = useMutation({
+  // Department dialog
+  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [deptForm, setDeptForm] = useState({ name: '', description: '' });
+
+  // Position dialog
+  const [posDialogOpen, setPosDialogOpen] = useState(false);
+  const [editingPos, setEditingPos] = useState<Position | null>(null);
+  const [posForm, setPosForm] = useState({ title: '', department: 0 });
+
+  /* ---- Mutations ---- */
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['hr-departments'] });
+
+  const saveDeptMutation = useMutation({
     mutationFn: async () => {
-      if (editing) {
-        const res = await api.put(`hr/departments/${editing.id}/`, form);
-        return res.data;
+      if (editingDept) {
+        return (await api.put(`hr/departments/${editingDept.id}/`, deptForm)).data;
       }
-      const res = await api.post('hr/departments/', form);
-      return res.data;
+      return (await api.post('hr/departments/', deptForm)).data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hr-departments'] });
-      setDialogOpen(false);
-      setEditing(null);
-      setForm({ name: '', description: '' });
-    },
+    onSuccess: () => { invalidate(); closeDeptDialog(); },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`hr/departments/${id}/`);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-departments'] }),
+  const deleteDeptMutation = useMutation({
+    mutationFn: async (id: number) => { await api.delete(`hr/departments/${id}/`); },
+    onSuccess: invalidate,
   });
 
-  const startCreate = () => {
-    setEditing(null);
-    setForm({ name: '', description: '' });
-    setDialogOpen(true);
-  };
-
-  const startEdit = (dept: Department) => {
-    setEditing(dept);
-    setForm({ name: dept.name || '', description: dept.description || '' });
-    setDialogOpen(true);
-  };
-
-  const toggleSort = (key: 'name' | 'created_at') => {
-    if (sortKey !== key) {
-      setSortKey(key);
-      setSortDir(key === 'name' ? 'asc' : 'desc');
-      return;
-    }
-    setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-  };
-
-  const filteredDepartments = (departments ?? [])
-    .filter((dept) => dept.name?.toLowerCase().includes(search.trim().toLowerCase()))
-    .sort((a, b) => {
-      if (sortKey === 'name') {
-        const left = a.name?.toLowerCase() ?? '';
-        const right = b.name?.toLowerCase() ?? '';
-        return sortDir === 'asc' ? left.localeCompare(right) : right.localeCompare(left);
+  const savePosMutation = useMutation({
+    mutationFn: async () => {
+      const payload = { title: posForm.title, department: posForm.department };
+      if (editingPos) {
+        return (await api.put(`hr/positions/${editingPos.id}/`, payload)).data;
       }
-      const left = new Date(a.created_at).getTime();
-      const right = new Date(b.created_at).getTime();
-      return sortDir === 'asc' ? left - right : right - left;
+      return (await api.post('hr/positions/', payload)).data;
+    },
+    onSuccess: () => { invalidate(); closePosDialog(); },
+  });
+
+  const deletePosMutation = useMutation({
+    mutationFn: async (id: number) => { await api.delete(`hr/positions/${id}/`); },
+    onSuccess: invalidate,
+  });
+
+  /* ---- Helpers ---- */
+  const toggle = (id: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
+  };
 
+  const closeDeptDialog = () => { setDeptDialogOpen(false); setEditingDept(null); setDeptForm({ name: '', description: '' }); };
+  const closePosDialog = () => { setPosDialogOpen(false); setEditingPos(null); setPosForm({ title: '', department: 0 }); };
+
+  const startCreateDept = () => { setEditingDept(null); setDeptForm({ name: '', description: '' }); setDeptDialogOpen(true); };
+  const startEditDept = (dept: Department) => { setEditingDept(dept); setDeptForm({ name: dept.name, description: dept.description || '' }); setDeptDialogOpen(true); };
+
+  const startCreatePos = (deptId: number) => { setEditingPos(null); setPosForm({ title: '', department: deptId }); setPosDialogOpen(true); };
+  const startEditPos = (pos: Position) => { setEditingPos(pos); setPosForm({ title: pos.title, department: pos.department || 0 }); setPosDialogOpen(true); };
+
+  /* ---- Filtering ---- */
+  const filtered = (departments ?? []).filter((dept) =>
+    dept.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+    dept.positions?.some((p) => p.title.toLowerCase().includes(search.trim().toLowerCase()))
+  );
+
+  /* ---- Early returns ---- */
   if (isLoading) {
     return (
-      <HRLayout title={t('hr.pages.departments.title')} subtitle={t('hr.pages.departments.subtitle')}>
+      <HRLayout title={t('hr.pages.structure.title')} subtitle={t('hr.pages.structure.subtitle')}>
         <div className="rounded-2xl border bg-card/70 p-8 text-center">{t('hr.common.loading')}</div>
       </HRLayout>
     );
   }
   if (error) {
     return (
-      <HRLayout title={t('hr.pages.departments.title')} subtitle={t('hr.pages.departments.subtitle')}>
+      <HRLayout title={t('hr.pages.structure.title')} subtitle={t('hr.pages.structure.subtitle')}>
         <div className="rounded-2xl border bg-card/70 p-8 text-center text-red-500">
           {t('hr.pages.departments.error')}
         </div>
@@ -112,108 +140,175 @@ const HRDepartments = () => {
   }
 
   return (
-    <HRLayout title={t('hr.pages.departments.title')} subtitle={t('hr.pages.departments.subtitle')}>
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">{t('hr.common.total')}: {filteredDepartments.length}</div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={startCreate}>{t('hr.pages.departments.create')}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{editing ? t('hr.pages.departments.edit') : t('hr.pages.departments.new')}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <label className="grid gap-2 text-sm">
-                {t('hr.pages.departments.fields.name')}
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </label>
-              <label className="grid gap-2 text-sm">
-                {t('hr.pages.departments.fields.description')}
-                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </label>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('hr.common.cancel')}</Button>
-                <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending}>
-                  {saveMutation.isPending ? t('hr.common.saving') : t('hr.common.save')}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+    <HRLayout title={t('hr.pages.structure.title')} subtitle={t('hr.pages.structure.subtitle')}>
+      {/* ---- Header row ---- */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('hr.pages.departments.searchPlaceholder')}
+            className="max-w-sm"
+          />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {t('hr.common.total')}: {filtered.length}
+          </span>
+        </div>
+        <Button onClick={startCreateDept} className="gap-2">
+          <Plus className="h-4 w-4" />
+          {t('hr.pages.departments.create')}
+        </Button>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('hr.pages.departments.searchPlaceholder')}
-          className="max-w-sm"
-        />
-      </div>
+      {/* ---- Tree ---- */}
+      <div className="space-y-3 mt-6">
+        {filtered.map((dept) => {
+          const isOpen = expanded.has(dept.id);
+          const posCount = dept.positions?.length || 0;
 
-      <div className="bg-card rounded-2xl border mt-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
+          return (
+            <div key={dept.id} className="rounded-2xl border bg-card/70 shadow-[var(--shadow-soft)] overflow-hidden">
+              {/* Department row */}
+              <div className="flex items-center gap-3 px-5 py-4">
                 <button
                   type="button"
-                  onClick={() => toggleSort('name')}
-                  className="inline-flex items-center gap-2 hover:underline"
+                  onClick={() => toggle(dept.id)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Toggle positions"
                 >
-                  {t('hr.pages.departments.table.name')}
-                  {sortKey === 'name' && (
-                    <span className="text-xs text-muted-foreground">{sortDir.toUpperCase()}</span>
-                  )}
+                  {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
-              </TableHead>
-              <TableHead>{t('hr.pages.departments.table.description')}</TableHead>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => toggleSort('created_at')}
-                  className="inline-flex items-center gap-2 hover:underline"
-                >
-                  {t('hr.pages.departments.table.created')}
-                  {sortKey === 'created_at' && (
-                    <span className="text-xs text-muted-foreground">{sortDir.toUpperCase()}</span>
+
+                <Building2 className="h-4 w-4 text-primary shrink-0" />
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground">{dept.index}</span>
+                    <span className="font-medium truncate">{dept.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({posCount} {t('hr.pages.structure.positionsCount')})
+                    </span>
+                  </div>
+                  {dept.description && (
+                    <p className="text-sm text-muted-foreground mt-0.5 truncate">{dept.description}</p>
                   )}
-                </button>
-              </TableHead>
-              <TableHead className="text-right">{t('hr.pages.departments.table.actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDepartments.map((dept) => (
-              <TableRow key={dept.id}>
-                <TableCell className="font-medium">{dept.name}</TableCell>
-                <TableCell>{dept.description || '—'}</TableCell>
-                <TableCell>{new Date(dept.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => startEdit(dept)}>{t('hr.common.edit')}</Button>
-                    {isSenior && (
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={() => startCreatePos(dept.id)} title={t('hr.pages.structure.addPosition')}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => startEditDept(dept)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  {isSenior && (
                     <Button
                       size="sm"
-                      variant="destructive"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
                       onClick={() => {
-                        if (confirm(t('hr.pages.departments.deleteConfirm')))
-                        {
-                          deleteMutation.mutate(dept.id);
+                        if (confirm(t('hr.pages.departments.deleteConfirm'))) {
+                          deleteDeptMutation.mutate(dept.id);
                         }
                       }}
                     >
-                      {t('hr.common.delete')}
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  )}
+                </div>
+              </div>
+
+              {/* Nested positions */}
+              {isOpen && dept.positions && dept.positions.length > 0 && (
+                <div className="border-t bg-muted/30">
+                  {dept.positions.map((pos) => (
+                    <div key={pos.id} className="flex items-center gap-3 px-5 py-3 pl-14 border-b last:border-b-0">
+                      <Briefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-xs font-mono text-muted-foreground">{pos.index}</span>
+                      <span className="flex-1 text-sm">{pos.title}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" onClick={() => startEditPos(pos)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        {isSenior && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (confirm(t('hr.pages.positions.deleteConfirm'))) {
+                                deletePosMutation.mutate(pos.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Empty state for open dept */}
+              {isOpen && (!dept.positions || dept.positions.length === 0) && (
+                <div className="border-t bg-muted/30 px-5 py-4 pl-14 text-sm text-muted-foreground">
+                  {t('hr.pages.structure.noPositions')}
+                  <Button size="sm" variant="link" className="ml-2 p-0 h-auto" onClick={() => startCreatePos(dept.id)}>
+                    {t('hr.pages.structure.addPosition')}
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* ---- Department Dialog ---- */}
+      <Dialog open={deptDialogOpen} onOpenChange={setDeptDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingDept ? t('hr.pages.departments.edit') : t('hr.pages.departments.new')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm">
+              {t('hr.pages.departments.fields.name')}
+              <Input value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} />
+            </label>
+            <label className="grid gap-2 text-sm">
+              {t('hr.pages.departments.fields.description')}
+              <Textarea value={deptForm.description} onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })} />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={closeDeptDialog}>{t('hr.common.cancel')}</Button>
+              <Button onClick={() => saveDeptMutation.mutate()} disabled={!deptForm.name || saveDeptMutation.isPending}>
+                {saveDeptMutation.isPending ? t('hr.common.saving') : t('hr.common.save')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Position Dialog ---- */}
+      <Dialog open={posDialogOpen} onOpenChange={setPosDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingPos ? t('hr.pages.positions.edit') : t('hr.pages.positions.new')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm">
+              {t('hr.pages.positions.fields.title')}
+              <Input value={posForm.title} onChange={(e) => setPosForm({ ...posForm, title: e.target.value })} />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={closePosDialog}>{t('hr.common.cancel')}</Button>
+              <Button onClick={() => savePosMutation.mutate()} disabled={!posForm.title || savePosMutation.isPending}>
+                {savePosMutation.isPending ? t('hr.common.saving') : t('hr.common.save')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </HRLayout>
   );
 };

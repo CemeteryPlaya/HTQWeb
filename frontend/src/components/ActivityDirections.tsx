@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import directionLogo1 from '@/assets/directionsLogo1.png';
-import directionLogo2 from '@/assets/directionsLogo2.png';
-import directionLogo3 from '@/assets/directionsLogo3.png';
-import directionLogo4 from '@/assets/directionsLogo4.png';
-import directionLogo5 from '@/assets/directionsLogo5.png';
+import { OptimizedImage } from './OptimizedImage';
+
+const directionLogo1 = '/images/directionsLogo1.webp';
+const directionLogo2 = '/images/directionsLogo2.webp';
+const directionLogo3 = '/images/directionsLogo3.webp';
+const directionLogo4 = '/images/directionsLogo4.webp';
+const directionLogo5 = '/images/directionsLogo5.webp';
 
 export const ActivityDirections = () => {
   const { t } = useTranslation();
@@ -61,12 +63,14 @@ export const ActivityDirections = () => {
           <div className="flex gap-3">
             <button
               onClick={prevSlide}
+              aria-label="Previous slide"
               className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={nextSlide}
+              aria-label="Next slide"
               className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
             >
               <ChevronRight size={20} />
@@ -84,9 +88,14 @@ export const ActivityDirections = () => {
               onClick={() => setActiveIndex(index)}
             >
               <div className="aspect-[4/3] relative">
-                <img
+                <OptimizedImage
                   src={direction.image}
                   alt={direction.title}
+                  width={536}
+                  height={402}
+                  srcSet={`${direction.image.replace('.webp', '-320w.webp')} 320w, ${direction.image} 536w`}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />

@@ -17,15 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from mainView.views import ItemViewSet, index, ProfileViewSet, RegisterView, AdminUserViewSet, PendingRegistrationViewSet
-from mainView.views import NewsViewSet, ContactRequestViewSet
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
+from mainView.views import (
+    ItemViewSet, index, ProfileViewSet, RegisterView,
+    AdminUserViewSet, PendingRegistrationViewSet,
+    NewsViewSet, ContactRequestViewSet, ConferenceConfigView,
+    SafeTokenObtainPairView,
 )
-from mainView.serializers import EmailTokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
+from media_manager.file_views import secure_media_download
+from tasks import urls as task_urls
 
 router = DefaultRouter()
 router.register(r'items', ItemViewSet, basename='item')
@@ -39,12 +41,20 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/hr/', include('hr.urls', namespace='hr')),
-    path('api/hr/', include('tasks.urls', namespace='tasks')),
-    path('api/token/', TokenObtainPairView.as_view(serializer_class=EmailTokenObtainPairSerializer), name='token_obtain_pair'),
+    # Legacy alias: keep task endpoints reachable under /api/hr/* for old clients/tests.
+    path('api/hr/', include((task_urls.urlpatterns, 'tasks'), namespace='tasks_hr_legacy')),
+    path('api/', include('tasks.urls', namespace='tasks')),
+    path('api/token/', SafeTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/v1/register/', RegisterView.as_view(), name='auth_register'),
+    path('api/v1/conference/config/', ConferenceConfigView.as_view(), name='conference_config'),
+    path('api/messenger/', include('messenger.urls', namespace='messenger')),
+    path('api/email/', include('internal_email.urls', namespace='internal_email')),
+    # Secure chunked file download with Range-request support
+    path('api/media/download/<path:filepath>/', secure_media_download, name='secure_media_download'),
     path('', index, name='index'),
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
