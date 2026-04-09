@@ -19,6 +19,7 @@ from hr.roles import has_hr_group
 
 logger = logging.getLogger(__name__)
 
+
 try:
     from deep_translator import GoogleTranslator
 except ImportError:

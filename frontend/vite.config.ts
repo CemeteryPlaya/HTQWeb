@@ -7,7 +7,6 @@ import viteCompression from "vite-plugin-compression";
 import compression from "compression";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 
-
 function isEnvFalse(value: string | undefined) {
   if (!value) return false;
   const normalized = value.trim().toLowerCase();
@@ -18,7 +17,7 @@ function isEnvFalse(value: string | undefined) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const enableDevCompression = env.VITE_DEV_COMPRESSION === "true";
-  
+
   const httpsDisabledByEnv = isEnvFalse(env.VITE_DEV_HTTPS);
   // Resolve certs relative to this config file's directory (frontend/)
   const _certCandidates = [
@@ -32,6 +31,7 @@ export default defineConfig(({ mode }) => {
     ? { cert: fs.readFileSync(_found.cert), key: fs.readFileSync(_found.key) }
     : undefined;
   console.log("[vite] HTTPS:", httpsConfig ? `enabled (${_found!.cert})` : "disabled");
+
   const isHttps = !!httpsConfig;
   // NOTE:
   // 0.0.0.0 is valid as a server bind address, but not as an outbound proxy target.

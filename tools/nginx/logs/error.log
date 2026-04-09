@@ -1,0 +1,10 @@
+2026/04/01 13:58:37 [notice] 8052#2684: signal process started
+2026/04/01 13:58:37 [error] 8052#2684: OpenEvent("Global\ngx_reload_17248") failed (5: Access is denied)
+2026/04/01 13:58:50 [notice] 8572#10276: signal process started
+2026/04/01 15:21:45 [notice] 22536#13520: signal process started
+2026/04/01 15:29:13 [notice] 23256#14712: signal process started
+2026/04/01 15:38:37 [notice] 16936#20100: signal process started
+2026/04/01 15:39:53 [error] 23052#21564: *1183 upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: _, request: "GET /ws/sfu/ HTTP/1.1", upstream: "http://127.0.0.1:4443/", host: "127.0.0.1:8080"
+2026/04/01 15:40:37 [error] 23052#21564: *1193 upstream prematurely closed connection while reading response header from upstream, client: ::1, server: _, request: "GET /ws/sfu/ HTTP/1.1", upstream: "http://127.0.0.1:4443/", host: "localhost:8080"
+2026/04/01 15:58:48 [notice] 23768#23504: signal process started
+2026/04/01 15:58:48 [error] 23768#23504: OpenEvent("Global\ngx_reload_17248") failed (5: Access is denied)

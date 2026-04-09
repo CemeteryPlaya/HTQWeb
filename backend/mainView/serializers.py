@@ -135,6 +135,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             return employee.department.id
         return None
 
+    def get_department_id(self, obj):
+        if hasattr(obj.user, 'employee') and obj.user.employee.department:
+            return obj.user.employee.department.id
+        return None
+
     def get_position(self, obj):
         """Название должности сотрудника из HR-модуля."""
         employee = _get_employee_or_none(obj.user)
@@ -181,6 +186,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'login_required',
             )
 
+        from django.db.models import Q
         user = None
         try:
             user_obj = User.objects.get(

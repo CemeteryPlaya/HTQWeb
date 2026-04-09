@@ -58,7 +58,7 @@ services:
       interval: 5s
       retries: 5
 
-  # ─── Django backend (Gunicorn) ────────────────────
+  # ─── Django backend (Daphne) ────────────────────
   backend:
     build:
       context: .

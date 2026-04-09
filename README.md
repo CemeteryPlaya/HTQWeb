@@ -110,6 +110,7 @@ VITE_SFU_URL=wss://xxxx.trycloudflare.com/ws/sfu
 Do not hardcode `VITE_SFU_URL`; keep it empty when testing on LAN.
 If Vite prints HMR websocket errors through tunnel, set `VITE_DISABLE_HMR=true` in `frontend/.env`.
 
+
 ## InstaTunnel + Local Nginx Reverse Proxy (Legacy)
 
 For dynamic InstaTunnel domains with unified routing on a single port:
