@@ -44,7 +44,12 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*, .ngrok-free.app, .ngrok.io').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '*, .ngrok-free.app, .ngrok.io').split(',') if h.strip()]
+
+# Always allow loopback addresses so Docker health checks work regardless of DEBUG
+for _h in ('localhost', '127.0.0.1', '[::1]'):
+    if _h not in ALLOWED_HOSTS and '*' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
 
 
 # Application definition
