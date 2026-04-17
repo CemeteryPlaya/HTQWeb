@@ -3324,6 +3324,22 @@ export class MediaEngine {
       `[MediaEngine] handleRecvTrack: kind=${track.kind} mid=${mid} id=${track.id} readyState=${track.readyState}`
     );
 
+    // DIAGNOSTIC: Log track details for debugging
+    if (this.recvDiagEnabled) {
+      console.log('[MediaEngine] Track details:', {
+        kind: track.kind,
+        id: track.id,
+        label: track.label,
+        readyState: track.readyState,
+        enabled: track.enabled,
+        muted: track.muted,
+        mid: mid,
+        transceiverMid: event.transceiver?.mid,
+        streamId: stream?.id,
+        streamTrackCount: stream?.getTracks().length,
+      });
+    }
+
     type ConsumerEntry = {
       consumerId: string;
       mid: string;
@@ -3377,6 +3393,13 @@ export class MediaEngine {
         `[MediaEngine] Received track without matching consumer, mid=${mid}, kind=${track.kind}, ` +
         `activeConsumers=${this.activeConsumers.size}, remoteStreams=${this.remoteStreams.size}`
       );
+      
+      // DIAGNOSTIC: Log active consumers for debugging
+      if (this.recvDiagEnabled) {
+        console.log('[MediaEngine] Active consumers:', Array.from(this.activeConsumers.entries()));
+        console.log('[MediaEngine] Remote streams:', Array.from(this.remoteStreams.entries()));
+      }
+      
       return;
     }
 
@@ -3394,6 +3417,18 @@ export class MediaEngine {
     console.log(
       `[MediaEngine] Remote stream ready: ${matchedConsumer.kind} from ${matchedConsumer.displayName} (consumer=${matchedConsumer.consumerId})`
     );
+    
+    // DIAGNOSTIC: Verify stream is properly configured
+    if (this.recvDiagEnabled) {
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+      console.log('[MediaEngine] Stream tracks after onRemoteStream:', {
+        videoCount: videoTracks.length,
+        audioCount: audioTracks.length,
+        videoTracks: videoTracks.map(t => ({ id: t.id, readyState: t.readyState, enabled: t.enabled })),
+        audioTracks: audioTracks.map(t => ({ id: t.id, readyState: t.readyState, enabled: t.enabled })),
+      });
+    }
   }
 
   /**
@@ -3411,6 +3446,11 @@ export class MediaEngine {
     const iceParams = td.iceParameters as any;
     const dtlsParams = td.dtlsParameters as any;
     const iceCandidates = td.iceCandidates as any[];
+
+    // DIAGNOSTIC: Log ICE candidates received from SFU
+    if (this.iceDiagEnabled) {
+      console.log('[MediaEngine] SFU ICE Candidates:', JSON.stringify(iceCandidates, null, 2));
+    }
 
     // BUNDLE group must only include active (non-rejected) m-lines.
     // Chrome rejects offers where a mid in BUNDLE has port=0.
@@ -3523,14 +3563,57 @@ export class MediaEngine {
       }
 
       // ICE candidates (on every m= line for compatibility)
+      let validCandidateCount = 0;
+      let invalidCandidateCount = 0;
+      
       for (const cand of iceCandidates) {
+        // Validate and log candidate issues
+        const candidateIp = cand.ip;
+        const isPrivateIp = candidateIp && (
+          candidateIp.startsWith('10.') ||
+          candidateIp.startsWith('192.168.') ||
+          candidateIp.startsWith('172.16.') ||
+          candidateIp.startsWith('127.') ||
+          candidateIp === '0.0.0.0'
+        );
+
+        if (this.iceDiagEnabled) {
+          console.log(
+            `[MediaEngine] ICE Candidate: ${cand.foundation} ${cand.protocol} ${cand.ip}:${cand.port} ` +
+            `type=${cand.type} priority=${cand.priority} ${isPrivateIp ? '(PRIVATE)' : '(PUBLIC)'}`
+          );
+        }
+
+        // Skip invalid candidates (0.0.0.0 is not useful for remote peers)
+        if (candidateIp === '0.0.0.0') {
+          invalidCandidateCount++;
+          if (this.iceDiagEnabled) {
+            console.warn('[MediaEngine] Skipping 0.0.0.0 candidate - not useful for remote connection');
+          }
+          continue;
+        }
+
+        validCandidateCount++;
         let line = `a=candidate:${cand.foundation} 1 ${cand.protocol} ${cand.priority} ${cand.ip} ${cand.port} typ ${cand.type}`;
         if (cand.protocol === 'tcp' && cand.tcpType) {
           line += ` tcptype ${cand.tcpType}`;
         }
         sdp += line + '\r\n';
       }
+      
+      if (this.iceDiagEnabled) {
+        console.log(
+          `[MediaEngine] ICE Candidates summary: ${validCandidateCount} valid, ` +
+          `${invalidCandidateCount} invalid (0.0.0.0)`
+        );
+      }
+      
       sdp += 'a=end-of-candidates\r\n';
+    }
+
+    // DIAGNOSTIC: Log final SDP offer for debugging
+    if (this.recvDiagEnabled) {
+      console.log('[MediaEngine] Recv Offer SDP (first 500 chars):\n', sdp.substring(0, 500));
     }
 
     return sdp;

@@ -1,15 +1,14 @@
-# ─────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # Dockerfile — Mediasoup SFU Server
 #
 # Multi-stage build:
-# 1. Build TypeScript → JavaScript
-# 2. Production image with only compiled JS + dependencies
+# 1. Build TypeScript → JavaScript + compile mediasoup C++ worker
+# 2. Production image with only compiled JS + runtime dependencies
 #
 # Mediasoup requires:
 # - Python 3 (for node-gyp)
 # - GCC/G++ (for C++ worker compilation)
-# - Linux headers
-# ─────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: Build ──
 FROM node:20-bullseye AS builder
@@ -55,8 +54,10 @@ COPY --from=builder /app/node_modules/mediasoup/worker/out/Release/mediasoup-wor
 ENV NODE_ENV=production
 ENV SFU_PORT=4443
 
+# Signaling port
 EXPOSE 4443
-EXPOSE 10000-10999/udp
-EXPOSE 10000-10999/tcp
+# WebRTC media port (single-port mode via WebRtcServer)
+EXPOSE 44444/udp
+EXPOSE 44444/tcp
 
 CMD ["node", "dist/server.js"]

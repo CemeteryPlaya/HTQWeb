@@ -1,0 +1,58 @@
+# ── Git ──
+.git
+.gitignore
+
+# ── Python ──
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+
+# ── Node ──
+frontend/node_modules
+sfu/node_modules
+node_modules
+.npm-cache
+
+# ── Build artifacts ──
+frontend/dist
+sfu/dist
+backend/staticfiles
+
+# ── Database ──
+*.sqlite3
+
+# ── Logs ──
+*.log
+tmp_*
+backend_run.*.log
+
+# ── Docs (not needed in image) ──
+*.md
+docs/
+API.md
+README.md
+SUMMARY.md
+WEBRTC_*.md
+QUICK_FIX.md
+READY_TO_RUN.md
+CHEATSHEET.md
+
+# ── Misc ──
+certs/
+certs.off/
+firewall_*
+*.exe
+.stfolder*
+.qwen/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store
+diagnose-webrtc.js
+test_regex.js
+bundle-report.html

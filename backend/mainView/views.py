@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import JsonResponse
+from django.db import connection
 from urllib.parse import urlparse, urlunparse
 import ipaddress
 import json
@@ -18,6 +20,26 @@ from .serializers import NewsSerializer
 from hr.roles import has_hr_group
 
 logger = logging.getLogger(__name__)
+
+
+def health_check(request):
+    """
+    Health check endpoint for nginx readiness probe.
+    Returns 200 if the service is alive and database is reachable.
+    """
+    db_status = "unknown"
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        db_status = "ok"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
+    return JsonResponse({
+        "status": "ok" if db_status == "ok" else "degraded",
+        "service": "htqweb-legacy-django",
+        "database": db_status,
+    })
 
 
 try:

@@ -57,3 +57,9 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+*.md
+.stfolder
+.stfolder/
+.qwen
+.stfolder.*
+node_modeules/

@@ -21,7 +21,7 @@ from mainView.views import (
     ItemViewSet, index, ProfileViewSet, RegisterView,
     AdminUserViewSet, PendingRegistrationViewSet,
     NewsViewSet, ContactRequestViewSet, ConferenceConfigView,
-    SafeTokenObtainPairView,
+    SafeTokenObtainPairView, health_check,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
@@ -39,6 +39,7 @@ router.register(r'v1/contact-requests', ContactRequestViewSet, basename='contact
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check, name='health_check'),
     path('api/', include(router.urls)),
     path('api/hr/', include('hr.urls', namespace='hr')),
     # Legacy alias: keep task endpoints reachable under /api/hr/* for old clients/tests.
