@@ -25,15 +25,18 @@ if ! PYTHONPATH=/app alembic upgrade head; then
   restart the container:
 
     DROP TABLE IF EXISTS
+        hr_shareable_links,
+        hr_pmo_members, hr_pmo_positions, hr_pmo_departments, hr_pmos,
+        hr_reporting_relations, hr_org_settings,
+        hr_level_thresholds,
         hr_audit_log, hr_documents, hr_time_entries, hr_applications,
         hr_vacancies, hr_employees, hr_positions, hr_departments,
         alembic_version_hr
     CASCADE;
 
-  Alternatively, if the existing tables already match revision 001,
-  stamp instead of dropping:
+  Alternatively, stamp to the latest revision you know is applied:
 
-    docker compose run --rm hr-service alembic stamp 001
+    docker compose run --rm hr-service alembic stamp 005
 ────────────────────────────────────────────────────────────────────
 EOF
     fi

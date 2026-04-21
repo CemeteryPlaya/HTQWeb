@@ -37,6 +37,9 @@ export default defineConfig(({ mode }) => {
   // 0.0.0.0 is valid as a server bind address, but not as an outbound proxy target.
   // Use loopback defaults so /api and /ws proxies work reliably in local/LAN dev.
   const backendHttpTarget = env.VITE_BACKEND_HTTP_TARGET || "http://127.0.0.1:8000";
+  const hrServiceTarget = env.VITE_HR_SERVICE_TARGET || "http://127.0.0.1:8006";
+  const tasksServiceTarget = env.VITE_TASKS_SERVICE_TARGET || "http://127.0.0.1:8007";
+  const userServiceTarget = env.VITE_USER_SERVICE_TARGET || "http://127.0.0.1:8005";
   // Keep SFU upstream plain WS by default (common for local/tunnel mode where TLS
   // is terminated at reverse proxy edge). If your SFU listens with TLS locally,
   // override via VITE_SFU_WS_TARGET=wss://127.0.0.1:4443.
@@ -93,6 +96,36 @@ export default defineConfig(({ mode }) => {
       ws: true,
       changeOrigin: true,
     },
+    // Microservice routes — mirror nginx upstream order (specific before catch-all)
+    "^/api/hr/": {
+      target: hrServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/tasks/": {
+      target: tasksServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/token/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/register/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/pending-registrations/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/v1/profile/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/v1/admin/users/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    // Django catch-all for remaining /api/* routes
     "/api": {
       target: backendHttpTarget,
       changeOrigin: true,

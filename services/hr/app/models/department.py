@@ -20,6 +20,7 @@ class Department(BaseModel):
     description: Mapped[str | None] = mapped_column(Text)
     manager_id: Mapped[int | None] = mapped_column(ForeignKey("hr_employees.id", use_alter=True))
     is_active: Mapped[bool] = mapped_column(default=True)
+    unit_type: Mapped[str] = mapped_column(String(20), nullable=False, default="department")
 
     # Relationships (populated after Employee is defined)
     employees: Mapped[list[Employee]] = relationship(  # noqa: F821

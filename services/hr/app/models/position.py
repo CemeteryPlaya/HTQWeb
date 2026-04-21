@@ -1,6 +1,6 @@
 """Position (должность) model."""
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import BaseModel
@@ -8,6 +8,11 @@ from app.models.base import BaseModel
 
 class Position(BaseModel):
     __tablename__ = "hr_positions"
+    __table_args__ = (
+        # weight is globally unique across all positions
+        Index("ix_hr_positions_weight", "weight"),
+        Index("ix_hr_positions_level", "level"),
+    )
 
     title: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     department_id: Mapped[int] = mapped_column(ForeignKey("hr_departments.id"))
@@ -16,5 +21,10 @@ class Position(BaseModel):
     requirements: Mapped[dict | None] = mapped_column(JSON)
     is_active: Mapped[bool] = mapped_column(default=True)
 
+    # Weight system: lower weight = higher in hierarchy (0 = top)
+    weight: Mapped[int] = mapped_column(Integer, nullable=False, default=100, unique=True)
+    # Level cached from hr_level_thresholds; recomputed on weight change
+    level: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
+
     def __repr__(self) -> str:
-        return f"<Position(id={self.id}, title='{self.title}', grade={self.grade})>"
+        return f"<Position(id={self.id}, title='{self.title}', weight={self.weight}, level={self.level})>"

@@ -11,6 +11,8 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/login', component: lazyPages.Login },
   { path: '/register', component: lazyPages.Register },
   { path: '/manage/news', component: lazyPages.AdminNews },
+  // Public org view — shareable token, no auth required
+  { path: '/public/org/:token', component: lazyPages.PublicOrgView },
 ];
 
 export const protectedRoutes: RouteConfig[] = [
@@ -31,6 +33,13 @@ export const protectedRoutes: RouteConfig[] = [
   { path: '/hr/history', component: lazyPages.HRHistory, requiresAuth: true },
   { path: '/hr/archive', component: lazyPages.HRArchive, requiresAuth: true },
   { path: '/hr/accounts', component: lazyPages.HRAccounts, requiresAuth: true },
+  { path: '/hr/org-chart', component: lazyPages.HROrgChart, requiresAuth: true },
+  { path: '/hr/pmo', component: lazyPages.HRPMO, requiresAuth: true },
+  { path: '/hr/share-links', component: lazyPages.HRShareLinks, requiresAuth: true },
+  { path: '/hr/positions', component: lazyPages.HRPositions, requiresAuth: true },
+  { path: '/hr/vacancies', component: lazyPages.HRVacancies, requiresAuth: true },
+  { path: '/hr/applications', component: lazyPages.HRApplications, requiresAuth: true },
+  { path: '/hr/offers', component: lazyPages.HROffers, requiresAuth: true },
   { path: '/calendar', component: lazyPages.HRCalendar, requiresAuth: true },
   { path: '/files', component: lazyPages.DepartmentFiles, requiresAuth: true },
   { path: '/conference', component: lazyPages.ConferencePage, requiresAuth: true },

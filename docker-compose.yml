@@ -25,6 +25,8 @@ services:
       POSTGRES_DB: ${DB_NAME:-htqweb}
       POSTGRES_USER: ${DB_USER:-htqweb}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-ltree.sql:/docker-entrypoint-initdb.d/01-ltree.sql:ro
@@ -52,6 +54,8 @@ services:
       POOL_MODE: transaction
       MAX_CLIENT_CONN: 1000
       DEFAULT_POOL_SIZE: 20
+    ports:
+      - "6432:5432"
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +75,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    ports:
+      - "6379:6379"
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -96,6 +102,8 @@ services:
       DB_ENGINE: django.db.backends.postgresql
       CACHE_BACKEND: django.core.cache.backends.redis.RedisCache
       CACHE_LOCATION: redis://redis:6379/0
+    ports:
+      - "8000:8000"
     depends_on:
       pgbouncer:
         condition: service_healthy
@@ -136,6 +144,8 @@ services:
       SERVICE_NAME: user-identity
       SERVICE_PORT: 8005
       SERVICE_ENV: ${SERVICE_ENV:-production}
+    ports:
+      - "8005:8005"
     depends_on:
       pgbouncer:
         condition: service_healthy
@@ -179,6 +189,8 @@ services:
       SERVICE_PORT: 8006
       SERVICE_ENV: ${SERVICE_ENV:-production}
       API_PREFIX: /api/hr/v1
+    ports:
+      - "8006:8006"
     depends_on:
       pgbouncer:
         condition: service_healthy
@@ -218,6 +230,8 @@ services:
       SERVICE_PORT: 8007
       SERVICE_ENV: ${SERVICE_ENV:-production}
       API_PREFIX: /api/tasks/v1
+    ports:
+      - "8007:8007"
     depends_on:
       pgbouncer:
         condition: service_healthy
@@ -299,6 +313,9 @@ services:
       - frontend
       - backend
       - sfu
+      - hr-service
+      - user-service
+      - task-service
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
       interval: 10s

@@ -107,6 +107,18 @@ export const ProfileSidebar: React.FC<Props> = ({ roles, department, position })
                         <li>
                             <Link to="/hr/history" className="text-primary hover:underline">{t('profile.sidebar.history')}</Link>
                         </li>
+                        <li>
+                            <Link to="/hr/offers" className="text-primary hover:underline">📋 Офферы</Link>
+                        </li>
+                        <li>
+                            <Link to="/hr/org-chart" className="text-primary hover:underline">🏗️ Орг. структура</Link>
+                        </li>
+                        <li>
+                            <Link to="/hr/pmo" className="text-primary hover:underline">📊 PMO</Link>
+                        </li>
+                        <li>
+                            <Link to="/hr/share-links" className="text-primary hover:underline">🔗 Публичные ссылки</Link>
+                        </li>
                     </ul>
                 </div>
             )}

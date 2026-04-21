@@ -151,6 +151,7 @@ class Employee(SoftDeleteMixin, models.Model):
         ACTIVE = 'active', 'Активен'
         ON_LEAVE = 'on_leave', 'В отпуске'
         DISMISSED = 'dismissed', 'Уволен'
+        INACTIVE = 'inactive', 'Неактивен'
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
