@@ -10,11 +10,21 @@
 # - GCC/G++ (for C++ worker compilation)
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Stage 1: Build ──
-FROM node:20-bullseye AS builder
+# -- Stage 1: Build --
+FROM node:22-bookworm AS builder
+
+# Optional proxy settings from host environment.
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ENV HTTP_PROXY=$HTTP_PROXY
+ENV HTTPS_PROXY=$HTTPS_PROXY
+ENV NO_PROXY=$NO_PROXY
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
 
 # Mediasoup native dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     python3 \
     python3-pip \
     build-essential \
@@ -31,11 +41,12 @@ COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-# ── Stage 2: Production ──
-FROM node:20-bullseye-slim
+# -- Stage 2: Production --
+FROM node:22-bookworm-slim
 
 # Runtime dependencies for Mediasoup C++ worker
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -53,6 +64,7 @@ COPY --from=builder /app/node_modules/mediasoup/worker/out/Release/mediasoup-wor
 # Environment
 ENV NODE_ENV=production
 ENV SFU_PORT=4443
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
 
 # Signaling port
 EXPOSE 4443
