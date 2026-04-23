@@ -4,10 +4,10 @@ Messenger Service — FastAPI microservice for HTQWeb platform.
 Handles chat, rooms, E2EE keys, and real-time Socket.IO communication.
 """
 
-import logging
+
 from contextlib import asynccontextmanager
 
-import structlog
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
@@ -18,27 +18,14 @@ from app.api.socket import sio_app
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
-    logging.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
+    log.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
     yield
-    logging.info("service_shutdown", extra={"service": settings.service_name})
+    log.info("service_shutdown", extra={"service": settings.service_name})
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_exc_info,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer(),
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-        logger_factory=structlog.PrintLoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+    configure_logging()
 
     app = FastAPI(
         title="Messenger Service",
@@ -71,11 +58,17 @@ def create_app() -> FastAPI:
     from app.api.v1 import messages as messages_router
     from app.api.v1 import keys as keys_router
     from app.api.v1 import users as users_router
+    from app.api.v1 import read as read_router
+    from app.api.v1 import attachments as attachments_router
+    from app.api.v1 import admin as admin_router
     
     app.include_router(rooms_router.router, prefix="/api/messenger/v1/rooms")
     app.include_router(messages_router.router, prefix="/api/messenger/v1/messages")
     app.include_router(keys_router.router, prefix="/api/messenger/v1/keys")
     app.include_router(users_router.router, prefix="/api/messenger/v1/users")
+    app.include_router(read_router.router, prefix="/api/messenger/v1")
+    app.include_router(attachments_router.router, prefix="/api/messenger/v1/attachments")
+    app.include_router(admin_router.router, prefix="/api/messenger/v1/admin")
 
     # Admin (sqladmin)
     from app.admin import create_admin

@@ -27,6 +27,10 @@ itsdangerous==2.2.0
 
 # Background workers
 dramatiq[redis,watch]==1.17.1
+apscheduler==3.10.4
+
+# Files
+aiofiles==24.1.0
 
 # Observability
 structlog==24.4.0

@@ -2,10 +2,10 @@
 Email Service — FastAPI microservice for HTQWeb platform.
 """
 
-import logging
+
 from contextlib import asynccontextmanager
 
-import structlog
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
@@ -15,27 +15,14 @@ from app.core.settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
-    logging.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
+    log.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
     yield
-    logging.info("service_shutdown", extra={"service": settings.service_name})
+    log.info("service_shutdown", extra={"service": settings.service_name})
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_exc_info,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer(),
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-        logger_factory=structlog.PrintLoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+    configure_logging()
 
     app = FastAPI(
         title="Email Service",

@@ -38,6 +38,14 @@ class Settings(BaseSettings):
 
     # Observability
     log_level: str = "INFO"
+    audit_log_retention_days: int = 90
+
+    # Attachments
+    attachment_dir: str = "/app/data/attachments"
+
+    # Push Notifications
+    fcm_api_key: str = ""
+    apns_cert_path: str = ""
 
     @property
     def db_dsn(self) -> str:

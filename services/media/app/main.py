@@ -5,41 +5,32 @@ This service handles file uploads, secure downloads (with Range support),
 and metadata tracking. Supports LocalStorage and S3Storage.
 """
 
-import logging
+
 from contextlib import asynccontextmanager
 
-import structlog
+
 from fastapi import FastAPI
 
 from app.core.settings import settings
 from app.core.health import router as health_router
 from app.middleware.request_id import RequestIDMiddleware
+from app.core.logging import configure_logging, get_logger
+from app.middleware.request_logging import RequestLoggingMiddleware
+
+log = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
-    logging.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
+    log.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
     yield
-    logging.info("service_shutdown", extra={"service": settings.service_name})
+    log.info("service_shutdown", extra={"service": settings.service_name})
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_exc_info,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer(),
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-        logger_factory=structlog.PrintLoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+    configure_logging()
 
     app = FastAPI(
         title="Media Service",
@@ -51,6 +42,7 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.service_env != "production" else None,
     )
 
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
     # Health (no prefix — gateway and Docker healthcheck hit /health/)

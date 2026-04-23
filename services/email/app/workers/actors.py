@@ -1,20 +1,18 @@
 """Dramatiq actors for email service."""
-
-import logging
-from app.workers import broker  # noqa: F401
-
 import dramatiq
+from app.workers import broker  # noqa: F401
+from app.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+log = get_logger(__name__)
 
+@dramatiq.actor(max_retries=5, min_backoff=1000, max_backoff=30000)
+def deliver_email(message_id: int) -> None:
+    """Deliver email message via SMTP/OAuth."""
+    log.info("delivering_email", message_id=message_id)
+    # TODO: real delivery logic
 
-@dramatiq.actor
-def sync_emails_from_provider(account_id: int) -> None:
-    """Background task to sync IMAP/Graph emails into local DB."""
-    logger.info("Syncing emails for account %d", account_id)
-
-
-@dramatiq.actor
-def check_delivery_status(message_id: str) -> None:
-    """Check for bounces or delivery receipts."""
-    logger.info("Checking delivery status for message %s", message_id)
+@dramatiq.actor(max_retries=3)
+def dlp_scan_attachment(attachment_id: int) -> None:
+    """Scan attachment for sensitive data."""
+    log.info("dlp_scanning_attachment", attachment_id=attachment_id)
+    # TODO: real DLP scan logic

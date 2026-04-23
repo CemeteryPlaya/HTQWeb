@@ -20,6 +20,7 @@ redis[hiredis]==5.2.1
 
 # Background workers
 dramatiq[redis,watch]==1.17.1
+apscheduler==3.10.4
 
 # Crypto (for OAuth tokens)
 cryptography==44.0.0
