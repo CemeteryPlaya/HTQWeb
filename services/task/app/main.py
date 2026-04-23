@@ -9,8 +9,8 @@ from app.admin import create_admin
 from app.api import v1_router
 from app.core.settings import settings
 from app.db import engine
+from app.core.health import router as health_router
 from app.middleware import RequestIDMiddleware
-from app.routers.health import router as health_router
 from app.workers import actors as _actors  # noqa: F401  ensures broker is configured
 
 # Configure structured logging

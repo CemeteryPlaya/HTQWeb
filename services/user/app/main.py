@@ -68,6 +68,7 @@ def get_application() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(auth_router.router)
+    app.include_router(auth_router.admin_router)
     app.include_router(registration_router.router)
     app.include_router(profile_router.router)
     app.include_router(admin_router.router)

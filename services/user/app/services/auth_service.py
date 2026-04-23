@@ -76,6 +76,7 @@ class TokenPayload(BaseModel):
     email: str
     is_staff: bool
     is_superuser: bool
+    is_admin: bool = False
     token_type: str  # "access" or "refresh"
     exp: datetime.datetime
     iat: datetime.datetime
@@ -92,10 +93,13 @@ def create_token_pair(
     """
     Create JWT access + refresh token pair.
 
-    Tokens contain custom claims (username, email, is_staff, is_superuser)
+    Tokens contain custom claims (username, email, is_staff, is_superuser, is_admin)
     so downstream services can authorize without calling this service.
+    The `is_admin` claim is derived from `is_staff or is_superuser` and is the
+    single source of truth for sqladmin access across all services.
     """
     now = datetime.datetime.now(datetime.timezone.utc)
+    is_admin = bool(is_staff or is_superuser)
 
     access_payload = {
         "user_id": user_id,
@@ -103,6 +107,7 @@ def create_token_pair(
         "email": email,
         "is_staff": is_staff,
         "is_superuser": is_superuser,
+        "is_admin": is_admin,
         "token_type": "access",
         "iat": now,
         "exp": now + datetime.timedelta(hours=2),

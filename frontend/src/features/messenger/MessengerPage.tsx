@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { messengerApi } from './api/messengerApi';
+import { useMessengerSocket } from './hooks/useMessengerSocket';
 import type { ChatRoom, ChatMessage, ChatUser } from './types';
 
 // ---------------------------------------------------------------------------
@@ -94,17 +95,20 @@ const MessengerPage: React.FC = () => {
         queryFn: messengerApi.getMe,
     });
 
+    // Socket.IO drives real-time updates; polling stays as a slow safety net.
+    useMessengerSocket(activeRoomId);
+
     const { data: rooms = [], isLoading: roomsLoading } = useQuery({
         queryKey: ['messenger-rooms'],
         queryFn: messengerApi.getRooms,
-        refetchInterval: 5000,
+        refetchInterval: 30000,
     });
 
     const { data: messages = [], isLoading: msgsLoading } = useQuery({
         queryKey: ['messenger-messages', activeRoomId],
         queryFn: () => activeRoomId ? messengerApi.getMessages(activeRoomId) : [],
         enabled: !!activeRoomId,
-        refetchInterval: 3000,
+        refetchInterval: 30000,
     });
 
     const { data: searchResults = [], isLoading: searchLoading } = useQuery({

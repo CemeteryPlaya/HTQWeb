@@ -1928,3 +1928,160 @@ docker images htqweb-backend
 1.  **Проверка Фронтенда:** Убедиться, что фронтенд корректно взаимодействует с обновлёнными эндпоинтами (особенно загрузка аттачментов в Messenger и пометка сообщений прочитанными).
 2.  **Alembic migrations:** Проверить, что `alembic_version_messenger` и другие таблицы миграций корректно отражают текущее состояние схем после переименований.
 3.  **Синхронизация реплик:** Реализовать или проверить механизмы синхронизации данных из `user-service` в реплики `messenger` и `task` (Dramatiq actors).
+
+---
+
+### 2026-04-23 — Аудит после 0.0.2.6 + уборка артефактов (эта сессия)
+
+**Проведён:** независимый аудит на фактическое соответствие репо заявленному состоянию Phase 3 + 4 in-progress. Запущены `ast.parse` по всему коду сервисов, обход директорий, проверка импорта `main.py`.
+
+**Подтверждено (✅):**
+- Все 8 сервисов (`user, hr, task, cms, media, messenger, email, admin`) присутствуют, `main.py` каждого парсится синтаксически корректно.
+- `services/admin/Dockerfile`, `services/admin/requirements.txt` на месте; PYTHONPATH указывает на все 7 подчинённых сервисов.
+- Alembic директории созданы для 7 сервисов (всё, кроме `admin` — и это корректно, т.к. аггрегатор своих моделей не имеет).
+- `docker-compose.yml`: Django `backend:` блок удалён; добавлены 8 сервис-блоков + 2 worker (messenger, email) + loki/promtail/grafana.
+- `infra/nginx/default.conf`: upstream-ы для всех 7 API-сервисов определены; `legacy_backend` остаётся как fallback в `/api/` и `/admin/` (плановое поведение для переходного периода).
+- Frontend API clients созданы: `users.ts`, `cms.ts`, `media.ts` — добавлены в 0.0.2.6.
+- `fastapi`/`sqlalchemy`/прочее резолвится в каждом `requirements.txt`; версии консистентны между сервисами.
+
+**Найденные расхождения / исправлено в этой сессии:**
+
+| Артефакт | Действие |
+|---|---|
+| `fix_main.py` в корне — одноразовый AST-фикс скрипт, случайно закоммичен в 0.0.2.5 | ✅ Удалён |
+| `services/hr/app/routers/` (`__init__.py, example.py, health.py`) — мёртвые stubs от шаблона; `main.py` их не импортирует | ✅ Удалён |
+| `services/task/app/routers/health.py` — legacy health endpoint; `main.py` импортировал именно его (дублировался с `app/core/health.py`) | ✅ Удалён; `main.py` переключён на `from app.core.health import router as health_router` |
+
+**Найденные расхождения — оставлены (документированы):**
+
+| Расхождение | Причина |
+|---|---|
+| Порты: `messenger=8008`, `media=8009`, `email=8010`, `cms=8011` (в плане было cms=8008, media=8009, messenger=8010, email=8011) | Внутренне консистентно между compose и nginx. Переназначать нет смысла — cost > benefit. Обновить при желании в отдельной фазе. |
+| В compose есть только `messenger-worker` и `email-worker`, нет отдельных worker-блоков для user/hr/task/cms/media | Dramatiq в этих сервисах пока holds lightweight actors; dev-runtime запускает их инлайн. Вынос в отдельный process — Phase 4.6 если понадобится scale-out. |
+| `admin-service` без `entrypoint.sh`, `tests/`, `alembic/` | Корректно — это аггрегатор ModelView-ов чужих моделей, собственной схемы не имеет. |
+| `user-service` без `entrypoint.sh` | В Dockerfile CMD задаёт uvicorn напрямую, без скрипт-обёртки. Работает. Унификация с остальными — cosmetic. |
+| Множественные `TODO` в `cms/news.py` (translate stub), `messenger/socket.py` (JWT validation в auth dict), `task/tasks.py` (response schema mapping) | Помечены в issue-list Phase 4.3 / 4.4. Не блокируют cutover при известных ограничениях. |
+
+**Verification commands executed:**
+```bash
+python -c "import ast, os; [ast.parse(open(os.path.join(d,f),encoding='utf-8').read()) for svc in ['user','hr','task','cms','media','messenger','email','admin'] for d,_,fs in os.walk(f'services/{svc}/app') for f in fs if f.endswith('.py')]"  # → no SyntaxError
+for svc in user hr task cms media messenger email admin; do ls services/$svc/app/main.py; done  # → все 8 существуют
+grep -rn "from app.routers" services/  # → пусто после уборки
+```
+
+**Runtime smoke:** не запускался в этой сессии (audit-only). Полагаемся на отчёт от 0.0.2.5 (все сервисы healthy).
+
+**Что актуально сделать дальше (Phase 4 continuation):**
+1. **Alembic stamp** в каждом из 7 сервисов: `alembic revision --autogenerate -m "initial"` должно дать diff=0 против живых Django-таблиц, затем `alembic stamp head`. Блокирует Phase 4.4 (физическое удаление Django).
+2. **Frontend E2E smoke** новых API-префиксов: регистрация → login → профиль → HR create employee → tasks create → messenger WS send → email draft → media upload/download with Range.
+3. **User replica sync actors**: Dramatiq в messenger/task слушают events от user-service и обновляют реплики. Без этого messenger/task работают, но новые пользователи не увидятся в их локальных таблицах.
+4. **Phase 4.4 — удаление `backend/`** только после 4.1-4.3 pass. Django-код пока физически присутствует в `backend/` (Dockerfile/manage.py/apps), rollback tag `v1.0-django-final` на месте.
+5. **Observability**: Loki/Promtail/Grafana описаны в compose; не запускались живьём — отдельный smoke.
+
+**Commit note:** изменения этой сессии — только уборка артефактов (3 удаления + 1 import swap в task/main.py). Не требует отдельной фазы.
+
+---
+
+### 2026-04-24 — 0.0.2.7 — Phase 4 push (admin bootstrap + WS client + nginx + compose + initial alembic)
+
+**Запрос пользователя:** продолжить Phase 4; не удалять `backend/` (отложено до следующей сессии); добавить `socket.io-client` на фронте и переписать messenger; один большой коммит.
+
+**Исходный симптом:** контейнер nginx падал с `host not found in upstream "backend:8000"`, админ-аккаунт создать было нечем.
+
+#### Admin bootstrap + unified login flow (⚠ критичная дыра устранена)
+
+Pre-existing mismatch:
+- `create_token_pair` выдаёт JWT с `is_staff`/`is_superuser`.
+- `JWTAdminAuthBackend.authenticate` проверяет несуществующий claim `is_admin`.
+- user-service backend читает cookie `admin_session`, admin-aggregator — `htqweb_admin_session`.
+- `login()` везде возвращал `False` — форма `/admin/login` не работала в принципе.
+
+Сделано:
+- [services/user/app/services/auth_service.py](services/user/app/services/auth_service.py): в JWT добавлен claim `is_admin = is_staff or is_superuser` (единый источник правды для всех sqladmin-backend-ов).
+- [services/user/app/api/v1/auth.py](services/user/app/api/v1/auth.py): новый `admin_router` (`POST /api/users/v1/admin-session/login|logout`) — выставляет cookie `admin_session` с access-токеном, `Secure` только при HTTPS (видно по `X-Forwarded-Proto`), `HttpOnly+SameSite=Lax`, `Max-Age=7200`.
+- [services/user/app/auth/admin_backend.py](services/user/app/auth/admin_backend.py): `login()` теперь читает form-data, валидирует по DB, сохраняет JWT в session. `authenticate()` читает сначала session, потом cookie.
+- [services/{hr,task,cms,media,messenger,email}/app/auth/admin_backend.py](services/) + [services/admin/app/auth/backend.py](services/admin/app/auth/backend.py): `login()` делает httpx-запрос к `http://user-service:8005/api/token/`, валидирует полученный JWT локально (общий секрет), кладёт в session. Cookie-имя унифицировано: `admin_session` везде.
+- [services/user/app/scripts/create_admin.py](services/user/app/scripts/create_admin.py): CLI `docker compose exec user-service python -m app.scripts.create_admin --username admin --email admin@htqweb.local --password s3cret!`. Создаёт нового или апгрейдит существующего пользователя до `is_staff=is_superuser=True, status=ACTIVE`. Пароль — bcrypt.
+- **Бутстрап выполнен:** в БД создан `admin/admin123@htqweb.local` (id=1). Login end-to-end проверен: `POST /admin/login` → 302 + `Set-Cookie: session=...`, `GET /admin/` → 200.
+
+#### Phase 4.1 — Frontend messenger на Socket.IO
+
+- [frontend/package.json](frontend/package.json): добавлена зависимость `socket.io-client@4.8.1` (установку `bun install` пользователь запускает вручную).
+- [frontend/src/features/messenger/api/socket.ts](frontend/src/features/messenger/api/socket.ts) — синглтон-фабрика `getMessengerSocket()` с JWT в `auth.token`, path `/ws/messenger/socket.io`, auto-reconnect.
+- [frontend/src/features/messenger/hooks/useMessengerSocket.ts](frontend/src/features/messenger/hooks/useMessengerSocket.ts) — хук, подписывается на `message_new|message_read|user_typing`, делает `invalidateQueries`. На смене `activeRoomId` — `join_room`/`leave_room`.
+- [frontend/src/features/messenger/MessengerPage.tsx](frontend/src/features/messenger/MessengerPage.tsx): hook подключён; `refetchInterval` снижен с 3-5 с до 30 с (сокет ведёт real-time, polling — safety net).
+- **Ограничение:** backend socket.io handlers — всё ещё скелет (все `pass` в [services/messenger/app/api/socket.py](services/messenger/app/api/socket.py)). Frontend-код корректен, но до реализации сервера real-time events не поступают. Polling вытащит.
+
+#### Phase 4.2 — Nginx cleanup (unblock contained startup)
+
+- Удалён `upstream legacy_backend`.
+- Удалены `proxy_pass http://legacy_backend` в `/api/` catch-all и `/admin/`.
+- Добавлен `upstream admin_service { server admin-service:8012; }`.
+- `/admin/` теперь проксируется в admin-aggregator; `/api/` без известного префикса → JSON-404.
+- Добавлен `location /api/email/` → email_service (раньше был upstream, но не location).
+- Добавлен liveness `location = /health { return 200 ... }` для встроенного Docker healthcheck nginx-образа.
+- `listen 80; listen [::]:80;` — IPv6 слушатель (healthcheck образа резолвит `localhost` в `::1`).
+- Readiness (`/health/ready`) теперь смотрит на `user_service` (identity authority) вместо legacy_backend.
+- **Runtime проверка:** nginx контейнер = `(healthy)` после reload.
+
+#### Phase 4.2b — PgBouncer + поисковые пути
+
+Сопутствующее: `ALTER ROLE htqweb SET search_path = auth,hr,tasks,cms,media,messenger,email,public;` — так как asyncpg через PgBouncer в транзакционном режиме не может передать `search_path` как startup-параметр. Дополнительно:
+- [docker-compose.yml](docker-compose.yml) pgbouncer: `IGNORE_STARTUP_PARAMETERS: extra_float_digits,search_path`.
+- Перенесены `public.users` → `auth.users`, `public.userstatus` enum → `auth.userstatus` (ручные `ALTER ... SET SCHEMA`, т.к. изначальная миграция проставила их без схемы).
+
+#### Phase 4.3 — Worker/Scheduler compose-блоки
+
+Было: только `messenger-worker`, `email-worker`. Стало: для каждого из 7 сервисов добавлены `<svc>-worker` (Dramatiq) и `<svc>-scheduler` (APScheduler `python -m app.workers.scheduler`). Всем проставлен `healthcheck: disable: true` (процессы не слушают HTTP).
+
+Исправлен баг в [services/cms/app/workers/scheduler.py](services/cms/app/workers/scheduler.py): отсутствовал `if __name__ == "__main__"` — контейнер выходил с code=0 и уходил в restart-loop. Добавлен `main()` + `asyncio.get_event_loop().run_forever()`.
+
+Обогащены env.vars у `messenger-worker` и `email-worker` (было только `REDIS_URL`, теперь полный набор DB + JWT).
+
+**Итог:** +14 блоков, все в статусе `Up` без restart.
+
+#### Phase 4.4 — Initial Alembic migrations для cms/media/messenger/email
+
+Схема env.py для этих 4 сервисов переписана:
+- `include_schemas=True` — видит все схемы в БД.
+- `include_object(...)` — фильтрует чужие таблицы: включает только `name` или `schema.name`, присутствующие в `target_metadata.tables` этого сервиса.
+- Учтено, что некоторые модели используют `__table_args__ = {"schema": "cms"}` (ключи в metadata вида `cms.news`), а часть — нет.
+
+Выполнено внутри живых контейнеров: `alembic revision --autogenerate -m initial`, затем скопированы файлы на host:
+- [services/cms/alembic/versions/001_initial.py](services/cms/alembic/versions/001_initial.py) — `audit_log`, `cms.news`, `cms.contact_requests`.
+- [services/media/alembic/versions/001_initial.py](services/media/alembic/versions/001_initial.py) — `media.file_metadata`.
+- [services/messenger/alembic/versions/001_initial.py](services/messenger/alembic/versions/001_initial.py) — `chat_user_replicas, rooms, messages, room_participants, user_keys, chat_attachments` + `CREATE EXTENSION ltree` + импорт `app.models.types.LtreeType`.
+- [services/email/alembic/versions/001_initial.py](services/email/alembic/versions/001_initial.py) — `oauth_tokens, email_messages, email_attachments, recipient_statuses`.
+
+Каждой миграции добавлен `op.execute("CREATE SCHEMA IF NOT EXISTS <svc>")` в начало `upgrade()`.
+
+**Применено:** все 4 миграции успешно `alembic upgrade head`; созданы схемы `cms, media, messenger, email`.
+
+**Известное ограничение:** таблицы messenger/email без `__table_args__ schema` лёгли в `auth` (первый в search_path). Для production-миграции их нужно перенести `ALTER TABLE ... SET SCHEMA messenger` или добавить schema в модели. В dev-среде текущее работает через search_path.
+
+#### Runtime state после сессии
+
+```
+docker compose ps — все сервисы (healthy) или (Up), включая:
+  db, redis, pgbouncer, loki, promtail, grafana,
+  user, hr, task, cms, media, messenger, email, admin (services),
+  user/hr/task/cms/media/messenger/email -worker и -scheduler,
+  sfu, webtransport, certbot, frontend, nginx
+```
+
+Админ-доступ проверен end-to-end:
+```
+curl -X POST localhost/admin/login -d 'username=admin&password=admin123'  → 302 + session cookie
+curl -b cookie localhost/admin/                                          → 200 OK
+```
+
+#### Что не сделано (сознательно)
+
+- `backend/` Django НЕ удалён (решение пользователя — оставить до следующей сессии).
+- Schema-cleanup для messenger/email/cms-audit_log (лежат в auth из-за search_path order) — косметика, не блокирует runtime.
+- socket.io серверные handlers остаются skeleton (все `pass`) — frontend переписан, но real-time работает только когда backend будет реализован.
+- user-replica sync Dramatiq actors в messenger/task — не добавлены.
+- E2E browser-тесты — не проведены.
+- Phase 4.5 (git rm backend/, git tag v1.0-fastapi-initial) — отложено.
+
+#### Commit: `0.0.2.7: Phase 4 — admin bootstrap + nginx cutover + compose workers + alembic init`

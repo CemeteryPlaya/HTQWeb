@@ -7,11 +7,13 @@ This is the entry point for all platform authentication.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.settings import settings
 from app.db import get_db_session
 from app.models.user import User, UserStatus
 from app.services.auth_service import (
@@ -20,6 +22,10 @@ from app.services.auth_service import (
     decode_token,
     verify_password,
 )
+
+
+ADMIN_COOKIE_NAME = "admin_session"
+ADMIN_COOKIE_MAX_AGE = 2 * 60 * 60  # 2 hours — matches access-token lifetime
 
 
 router = APIRouter(prefix="/api/token", tags=["auth"])
@@ -138,3 +144,67 @@ async def refresh_token(
     )
 
     return TokenRefreshResponse(access=tokens.access)
+
+
+admin_router = APIRouter(prefix="/api/users/v1/admin-session", tags=["admin-auth"])
+
+
+@admin_router.post("/login")
+async def admin_login(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    next: Annotated[str, Form()] = "/admin/",
+):
+    """Set the `admin_session` cookie so sqladmin backends accept the user.
+
+    Used by sqladmin login pages in every service. After submission the user
+    is redirected back to the original admin URL (`next`). Only users with
+    `is_staff` or `is_superuser` are accepted.
+    """
+    result = await db.execute(
+        select(User).where(
+            (User.email == username.lower()) | (User.username == username)
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    if user is None or user.status != UserStatus.ACTIVE:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if not (user.is_staff or user.is_superuser):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not an admin user")
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    tokens = create_token_pair(
+        user_id=user.id,
+        username=user.username,
+        email=user.email,
+        is_staff=user.is_staff,
+        is_superuser=user.is_superuser,
+    )
+
+    # Flag the cookie Secure only when the request itself is HTTPS — otherwise
+    # browsers on HTTP localhost would silently drop it. The X-Forwarded-Proto
+    # header (set by nginx) wins over the raw request scheme.
+    forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    is_https = forwarded_proto == "https"
+
+    response = RedirectResponse(url=next, status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key=ADMIN_COOKIE_NAME,
+        value=tokens.access,
+        max_age=ADMIN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=is_https,
+        samesite="lax",
+        path="/",
+    )
+    return response
+
+
+@admin_router.post("/logout")
+async def admin_logout(response: Response):
+    response.delete_cookie(ADMIN_COOKIE_NAME, path="/")
+    return {"ok": True}

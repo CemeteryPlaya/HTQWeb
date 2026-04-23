@@ -69,3 +69,19 @@ def stop_scheduler() -> None:
     if scheduler.running:
         scheduler.shutdown(wait=False)
         logger.info("CMS scheduler stopped")
+
+
+def main() -> None:
+    """Run the CMS scheduler as a standalone process (`python -m app.workers.scheduler`)."""
+    import asyncio
+
+    logging.basicConfig(level=logging.INFO)
+    start_scheduler()
+    try:
+        asyncio.get_event_loop().run_forever()
+    except (KeyboardInterrupt, SystemExit):
+        stop_scheduler()
+
+
+if __name__ == "__main__":
+    main()

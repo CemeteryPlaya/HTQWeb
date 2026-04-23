@@ -31,6 +31,36 @@ logging.getLogger("alembic.runtime.migration").info(
 target_metadata = Base.metadata
 
 
+# Keep autogenerate scoped to this service's own tables — other services share
+# the same database and their tables would otherwise show up as "to be dropped".
+# Metadata may store schema-qualified names (e.g. "cms.news") when models set
+# `__table_args__ = {"schema": "cms"}`; handle both forms.
+_OWN_TABLES = frozenset(target_metadata.tables.keys())
+_OWN_SCHEMAS = frozenset(
+    t.schema for t in target_metadata.tables.values() if t.schema
+)
+
+
+def include_object(obj, name, type_, reflected, compare_to) -> bool:
+    if type_ == "table":
+        schema = getattr(obj, "schema", None)
+        qualified = f"{schema}.{name}" if schema else name
+        if qualified in _OWN_TABLES or name in _OWN_TABLES:
+            return True
+        # Tables reflected from the DB outside of our schemas are other
+        # services' territory — leave them alone.
+        if reflected and schema not in _OWN_SCHEMAS and schema is not None:
+            return False
+        if reflected and not _OWN_SCHEMAS:
+            # No per-service schema declared on models — conservatively include
+            # only tables whose bare name matches a model.
+            return False
+        return False
+    if type_ == "index" and reflected and compare_to is None:
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode (generates SQL script)."""
     url = config.get_main_option("sqlalchemy.url")
@@ -40,6 +70,8 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         version_table=VERSION_TABLE,
+        include_object=include_object,
+        include_schemas=True,
     )
 
     with context.begin_transaction():
@@ -51,6 +83,8 @@ def do_run_migrations(connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         version_table=VERSION_TABLE,
+        include_object=include_object,
+        include_schemas=True,
     )
 
     with context.begin_transaction():

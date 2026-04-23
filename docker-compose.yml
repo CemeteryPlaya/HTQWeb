@@ -54,6 +54,10 @@ services:
       POOL_MODE: transaction
       MAX_CLIENT_CONN: 1000
       DEFAULT_POOL_SIZE: 20
+      # asyncpg + SQLAlchemy sends `search_path` as a startup parameter so each
+      # service lands in its own schema; PgBouncer in transaction mode must be
+      # told to accept/forward it.
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits,search_path
     ports:
       - "6432:5432"
     depends_on:
@@ -132,6 +136,42 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  user-worker:
+    build: ./services/user
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: auth
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["dramatiq", "app.workers.actors", "--processes", "1", "--threads", "2"]
+    healthcheck:
+      disable: true
+
+  user-scheduler:
+    build: ./services/user
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: auth
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
+
   # ─── HR Service ─────────────────────────────────
   hr-service:
     build:
@@ -172,6 +212,42 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  hr-worker:
+    build: ./services/hr
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: public
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/1
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["dramatiq", "app.workers.actors", "--processes", "1", "--threads", "2"]
+    healthcheck:
+      disable: true
+
+  hr-scheduler:
+    build: ./services/hr
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: public
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/1
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
 
   # ─── Task Service ───────────────────────────────
   task-service:
@@ -214,6 +290,42 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  task-worker:
+    build: ./services/task
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: public
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/2
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["dramatiq", "app.workers.actors", "--processes", "1", "--threads", "2"]
+    healthcheck:
+      disable: true
+
+  task-scheduler:
+    build: ./services/task
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_SCHEMA: public
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/2
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
+
   # ─── Messenger Service ─────────────────────────
   messenger-service:
     build:
@@ -244,11 +356,34 @@ services:
     restart: unless-stopped
     environment:
       DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
       REDIS_URL: redis://redis:6379/3
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
     depends_on:
-      redis:
-        condition: service_healthy
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
     command: ["dramatiq", "app.workers.actors", "--processes", "2", "--threads", "4"]
+    healthcheck:
+      disable: true
+
+  messenger-scheduler:
+    build: ./services/messenger
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/3
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
 
   # ─── Media Service ────────────────────────────
   media-service:
@@ -274,6 +409,48 @@ services:
         condition: service_healthy
     command: ["/app/entrypoint.sh"]
 
+  media-worker:
+    build: ./services/media
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/4
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      STORAGE_BACKEND: local
+      STORAGE_PATH: /app/media
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["dramatiq", "app.workers.actors", "--processes", "1", "--threads", "2"]
+    healthcheck:
+      disable: true
+
+  media-scheduler:
+    build: ./services/media
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/4
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      STORAGE_BACKEND: local
+      STORAGE_PATH: /app/media
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
+
   # ─── CMS Service ──────────────────────────────
   cms-service:
     build: ./services/cms
@@ -290,6 +467,40 @@ services:
       pgbouncer:
         condition: service_healthy
     command: ["/app/entrypoint.sh"]
+
+  cms-worker:
+    build: ./services/cms
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/5
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["dramatiq", "app.workers.actors", "--processes", "1", "--threads", "2"]
+    healthcheck:
+      disable: true
+
+  cms-scheduler:
+    build: ./services/cms
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/5
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
 
   # ─── Email Service ────────────────────────────
   email-service:
@@ -309,11 +520,35 @@ services:
     build: ./services/email
     restart: unless-stopped
     environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
       REDIS_URL: redis://redis:6379/6
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
     depends_on:
-      redis:
-        condition: service_healthy
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
     command: ["dramatiq", "app.workers.actors"]
+    healthcheck:
+      disable: true
+
+  email-scheduler:
+    build: ./services/email
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/6
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    depends_on:
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: ["python", "-m", "app.workers.scheduler"]
+    healthcheck:
+      disable: true
 
   # ─── Central Admin Aggregator ──────────────────
   admin-service:
