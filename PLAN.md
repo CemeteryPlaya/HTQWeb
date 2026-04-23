@@ -1,332 +1,171 @@
-# План: продолжение big-bang перехода HTQWeb с Django на FastAPI
+# PLAN.md — Execution log миграции HTQWeb (Django → FastAPI)
 
-> Полный исходный план: `C:\Users\User\.claude\plans\piped-gliding-perlis.md`
-> Этот файл — **только то, что осталось сделать** на момент паузы 2026-04-23.
-
-## Статус по фазам
-
-| Фаза | Статус | Комментарий |
-|---|---|---|
-| Phase 0 — Cleanup | ✅ done | Мусорные файлы удалены |
-| Phase 1 — Infra reorg | ✅ done | `infra/{nginx,db,certs}/`, `backend/Dockerfile`, dev-скрипты в `backend/scripts/dev/` |
-| Phase 2 — Template alignment | ✅ done | `_template/` приведён к канону (lifespan, sqladmin, dramatiq, apscheduler) |
-| Phase 3.1 — user-service | ✅ done | `routers/`→`api/v1/`, `Item` модель/CRUD, admin (User/PendingRegistration/Item), workers (email_confirmation_send + cleanup_stale_pending_registrations) |
-| Phase 3.7 — hr/task admin+workers | ✅ done | hr: 13 ModelView + audit_log_compaction + vacancy_application_notify. task: 10 ModelView + task_deadline_reminder + notification_dispatch. CORS убран из task/main.py |
-| **Phase 3.2 — cms-service** | 🟡 **in progress (~15%)** | См. ниже |
-| Phase 3.3 — media-service | ⬜ pending | |
-| Phase 3.6 — port backend/tasks/ | ⬜ pending | |
-| Phase 3.4 — messenger-service | ⬜ pending | |
-| Phase 3.5 — email-service | ⬜ pending | |
-| Phase 4 — Cutover (frontend, nginx, compose, удаление Django) | ⬜ pending | |
+> **Источник истины (полный план):** `C:\Users\User\.claude\plans\dynamic-imagining-goblet.md`
+> **Этот файл** — живой журнал выполнения. Обновляется **после каждой завершённой фазы** одновременно с git-коммитом. Предотвращает рассинхрон контекста между сессиями (anti-hallucination container).
 
 ---
 
-## Phase 3.2 — services/cms/ (продолжить отсюда)
+## Протокол ведения (обязательно для каждой сессии)
 
-### Уже сделано
-- `cp -r services/_template services/cms`
-- `services/cms/.env.example`: `SERVICE_NAME=cms`, `SERVICE_PORT=8008`, `DB_SCHEMA=cms`, `OTEL_SERVICE_NAME=cms`
-- `services/cms/pyproject.toml`: `name = "cms-service"`
+**В начале сессии:**
+1. Прочитать этот файл целиком.
+2. Прочитать полный план в `C:\Users\User\.claude\plans\dynamic-imagining-goblet.md`.
+3. Сверить реальное состояние с журналом:
+   - `git log --oneline -10` — последний коммит совпадает с записью?
+   - `git tag` — `v1.0-django-final` на месте?
+   - `ls services/` — сервисы, помеченные ✅, существуют?
+   - `docker images` — образы на месте?
+4. Если state расходится — **сначала обновить журнал** записью «Синхронизация», потом работать.
 
-### Прочитанные источники (не нужно перечитывать)
-- `backend/media_manager/models.py` — модели `News` и `ContactRequest` (см. ниже схему)
-- `backend/media_manager/views.py` — ViewSets `NewsViewSet` (с action `translate`), `ContactRequestViewSet`
-- `backend/mainView/views.py` — `ConferenceConfigView` (статический JSON, без таблицы)
+**Перед началом фазы:**
+- Пометить в таблице статус `🟡 in_progress`.
+- В логе создать секцию фазы с пустыми `сделано/непроверено/отклонения`.
 
-### Осталось сделать
+**После коммита фазы:**
+- В таблице `✅ done` + hash коммита.
+- Заполнить секцию лога честно (что реально сделано, что пропущено, что не верифицировано).
+- **Никогда не удалять старые записи** — только добавлять.
 
-**1. Заменить placeholder'ы в шаблонных файлах:**
-- `services/cms/app/main.py`: `__service_name__` → `cms`, `__service_description__` → `CMS-контент: новости, contact-requests, конференция`
-- `services/cms/app/api/v1/example.py` — удалить или переименовать в `news.py`/`contact_requests.py`/`conference.py`
+**При признаках путаницы (галлюцинации):**
+- Остановиться. Прочитать этот файл. Проверить state команды `git status` + `ls`.
+- Если найдено расхождение — добавить запись «Desync detected» с диагнозом.
 
-**2. Модели `services/cms/app/models/`:**
+---
 
-`news.py`:
-```python
-# News (зеркало backend/media_manager/models.py:5-20)
-# Поля: id, title (String 300), slug (String 320, unique), summary (Text),
-#       content (Text), image (String 500, nullable — путь в media-service),
-#       category (String 100, indexed), published (Bool, indexed),
-#       published_at (DateTime, nullable, indexed), created_at (auto)
-# db_table: cms.news (был mainView_news)
+## Таблица статусов фаз
+
+| Фаза | Статус | Коммит | Tag |
+|---|---|---|---|
+| 0.5 Cleanup + rollback | ✅ done | `fc722e4` (0.0.2.3) | `v1.0-django-final` |
+| 0.6 Observability bootstrap | ✅ done | `fc722e4` (0.0.2.3) | — |
+| 3.2 cms-service | ⬜ pending | — | — |
+| 3.3 media-service | ⬜ pending | — | — |
+| 3.6 task-service endpoints | ⬜ pending | — | — |
+| 3.4 messenger-service | ⬜ pending | — | — |
+| 3.5 email-service | ⬜ pending | — | — |
+| 3.X admin-aggregator | ⬜ pending | — | — |
+| 4 Cutover (frontend + Alembic + rm Django) | ⬜ pending | — | — |
+| 5 Post-production audit | ⬜ pending | — | `v1.0-fastapi-production` (в конце) |
+
+---
+
+## Ключевые решения (зафиксировано до старта)
+
+Зафиксированы через AskUserQuestion в сессии планирования 2026-04-23:
+
+- **Режим:** big-bang до Phase 4.5 (+ Phase 5), но пошаговые коммиты после каждой фазы
+- **CMS news.translate** — Dramatiq actor + внешний API TODO через env
+- **CMS conference config** — YAML `app/data/conference.yaml`
+- **Media storage** — `aiofiles` (local) для dev/early-prod, `aioboto3` (S3) переключение через `STORAGE_BACKEND` env
+- **Messenger WS** — `python-socketio` + Redis adapter (НЕ нативный FastAPI WS)
+- **Email OAuth** — env-плейсхолдеры, endpoints 503 при пустых ключах
+- **Alembic** — autogenerate должен давать diff=0 против живых Django-таблиц, затем `stamp head`
+- **Admin UI** — единый `services/admin/` (агрегатор) с импортом моделей через PYTHONPATH
+- **Messenger attachments** — локально в messenger-service
+- **Rollback** — `git tag v1.0-django-final` + `docker image htqweb-backend:django-final` (оба созданы)
+- **Logging** — Loki + Promtail + Grafana self-hosted (в docker-compose)
+- **Audit log** — таблица `audit_log` в схеме каждого сервиса + поток в Loki
+- **Тесты** — pytest + testcontainers (реальный Postgres); unit + integration + E2E (Playwright)
+
+---
+
+## Лог изменений (reverse chronological)
+
+### 2026-04-23 — `0.0.2.3` — Phase 0.5 + 0.6
+
+**Commit:** `fc722e4` / tag `v1.0-django-final` (на предыдущий `e58493f`)
+
+**Сделано:**
+- `git tag v1.0-django-final` на `e58493f`
+- `docker build -f backend/Dockerfile -t htqweb-backend:django-final backend/` (exit 0)
+- удалены рекурсивно `backend/**/__pycache__/` (303 `.pyc`)
+- удалены `backend/db.sqlite3`, `backend/django_error.log`
+- удалены untracked `.md` в корне: `CHEATSHEET.md`, `DEPLOY.md`, `QUICK_FIX.md`, `READY_TO_RUN.md`, `SUMMARY.md`, `WEBRTC_AUDIT.md`, `WEBRTC_ANALYSIS.md`, `WEBRTC_TROUBLESHOOTING.md`
+- сохранены: `docs/HR_SERVICE_TECHNICAL_SPEC.md`, `services/*/README.md` (теперь в git)
+- **docker-compose.yml** — добавлены сервисы:
+  - `loki` (grafana/loki:2.9.10, порт 3100, volume `loki_data`)
+  - `promtail` (grafana/promtail:2.9.10, монтирует `/var/lib/docker/containers` + `/var/run/docker.sock`)
+  - `grafana` (grafana/grafana-oss:10.4.4, порт 3001, volume `grafana_data`)
+- **infra/logging/**:
+  - `loki-config.yml` — single-binary, filesystem storage, retention 336h
+  - `promtail-config.yml` — Docker SD + JSON pipeline (вытаскивает `level`, `event`, `correlation_id`)
+  - `grafana-provisioning/datasources/loki.yml`
+  - `grafana-provisioning/dashboards/htqweb.yml`
+  - `grafana-dashboards/htqweb-services-overview.json` (error rate + recent errors + log rate panels)
+- **services/_template/**:
+  - `app/core/logging.py` (новый) — structlog JSON + `STANDARD_EVENTS` + `configure_logging()` + `get_logger()`
+  - `app/middleware/request_id.py` (обновлён) — читает/пробрасывает `X-Correlation-ID`, биндит в structlog contextvars
+  - `app/middleware/request_logging.py` (новый) — `request_received` / `request_completed` / `request_failed` с duration_ms
+  - `app/models/base.py` (новый) — `DeclarativeBase`, `TimestampMixin`, `IntIdMixin`
+  - `app/models/audit_log.py` (новый) — `AuditLog(Base)`, JSONB `changes`, indexed `correlation_id`, `action`, `resource_id`
+  - `app/services/audit.py` (новый) — `async record_action(session, user_id, action, resource_type, resource_id, changes, request)`
+  - `app/models/__init__.py` экспорт `Base, AuditLog, TimestampMixin, IntIdMixin`
+  - `app/main.py` — подключает `configure_logging()` в `create_app()`, middleware chain: `RequestLoggingMiddleware` (outer) → `RequestIDMiddleware` (inner)
+- синтаксис всех новых `.py` проверен через `ast.parse`
+
+**Непроверено / требует валидации (TODO при первом запуске сервиса):**
+- `docker compose up loki promtail grafana` — не запускалось; не подтверждено что Grafana видит Loki datasource
+- `_template/main.py` не запущен в uvicorn; только syntax-check
+- `promtail-config.yml` pipeline: не проверено что `json` stage корректно парсит реальные logs (зависит от точного формата structlog output)
+- AuditLog table в БД не создан — будет в Phase 4.4 через Alembic
+- OTEL instrumentation не добавлена в `_template/main.py` (есть только в `services/user/` частично) — отложено на Phase 5.6
+
+**Отклонения от плана (dynamic-imagining-goblet.md):**
+- ❌ Пропущен `scripts/dev/run-all.sh` (0.6.5) — некритично, dev-удобство
+- ❌ Пропущен `infra/logging/deploy.sh` (0.6.5) — deploy log sentinel, можно добавить в Phase 5.8
+- ❌ Пропущен `tempo` service для traces (0.6.4) — OTEL остаётся stdout-exporter
+- ⚠️ `_template/app/core/settings.py` НЕ обновлён — новые поля (`oauth_encryption_key`, `storage_backend`, `translation_api_key`, FCM/APNS) добавим per-service в их собственных settings.py
+
+**Следующий шаг:** Phase 3.2 — cms-service.
+- Источники: `backend/media_manager/models.py`, `backend/media_manager/views.py`, `backend/mainView/views.py`
+- Старт: заменить плейсхолдеры в `services/cms/app/main.py` (`__service_name__` → `cms`)
+- Deliverables: модели News/ContactRequest, schemas, endpoints, admin, workers (translate_news stub, news_scheduled_publish), YAML conference, slowapi rate-limit, pytest + testcontainers
+
+---
+
+## Известное состояние репозитория (на момент последнего обновления)
+
+```
+services/
+├── _template/        ✅ канонический, обновлён в 0.0.2.3 с observability
+├── user/             ✅ готов (Phase 3.1, до сессии)
+├── hr/               ✅ готов (Phase 3.7, до сессии)
+├── task/             🟡 модели+admin+workers есть, но endpoints НЕ портированы (Phase 3.6)
+├── cms/              🟡 только scaffold (~15%, placeholder'ы)
+├── media/            ⬜ нет
+├── messenger/        ⬜ нет
+├── email/            ⬜ нет
+└── admin/            ⬜ нет
+
+backend/              ⚠️ Django ещё живой, удалится в Phase 4.4
+  └── hr, internal_email, mainView, media_manager, messenger, tasks, webtransport, HTQWeb
+
+frontend/             ⚠️ React — частично мигрирован на /api/hr/v1, остальное на Django API
+infra/
+  ├── nginx/          ✅ есть
+  ├── db/             ✅ есть (init-ltree.sql)
+  ├── certs/          ✅ есть
+  └── logging/        ✅ новое (0.0.2.3)
 ```
 
-`contact_request.py`:
-```python
-# ContactRequest (зеркало backend/media_manager/models.py:23-44)
-# Поля: id, first_name (String 150), last_name (String 150), email (String 254),
-#       message (Text), handled (Bool, indexed), replied_at (DateTime, indexed),
-#       replied_by_id (Integer, nullable — FK на users.id в auth-схеме, без constraint),
-#       reply_message (Text), created_at (auto)
+---
+
+## Контрольный список проверки state (выполнить в начале следующей сессии)
+
+```bash
+# State проверка
+git log --oneline -3              # ожидаем: fc722e4 0.0.2.3 ... → e58493f 0.0.2.2 ...
+git tag | grep django-final       # ожидаем: v1.0-django-final
+docker images htqweb-backend      # ожидаем: htqweb-backend:django-final
+
+# Структура проверка
+ls services/_template/app/core/logging.py      # должен существовать
+ls services/_template/app/models/audit_log.py  # должен существовать
+ls infra/logging/loki-config.yml               # должен существовать
+
+# CMS на стартовой линии
+ls services/cms/app/models/                    # пока только __init__.py
+grep '__service_name__' services/cms/app/main.py  # ещё есть placeholder'ы
 ```
 
-Не забыть обновить `services/cms/app/models/__init__.py` с экспортом обоих + `Base`.
-
-**3. Endpoints `services/cms/app/api/v1/`:**
-
-- `news.py` — CRUD `/api/cms/v1/news/`:
-  - `GET /` — публичный список published=True
-  - `POST /` — admin-only (require `is_admin`)
-  - `GET /{id}` — публичный
-  - `PATCH /{id}`, `DELETE /{id}` — admin
-  - `POST /{id}/translate` — зеркало `NewsViewSet.translate` (вызов внешнего translation API; пока stub возвращает оригинал)
-- `contact_requests.py`:
-  - `POST /api/cms/v1/contact-requests/` — публичный (rate-limit через `slowapi`, например 3/мин на IP)
-  - `GET /api/cms/v1/contact-requests/` — admin list (with `?handled=false` filter)
-  - `PATCH /{id}` — admin (handle + reply)
-- `conference.py`:
-  - `GET /api/cms/v1/conference/config` — статический JSON. Источник: `Settings.conference_config` (Pydantic model в `core/settings.py`) или отдельный YAML-файл в `app/data/conference.yaml`. **Без таблицы.**
-
-Зарегистрировать роутеры в `services/cms/app/main.py` под префиксом `/api/cms/v1`.
-
-**4. Admin `services/cms/app/admin/`:**
-- Скопировать `services/user/app/auth/admin_backend.py` → `services/cms/app/auth/admin_backend.py` (он уже в `_template/`, проверить)
-- `views/__init__.py`: 2 ModelView:
-  - `NewsAdmin`: column_list = id/title/category/published/published_at/created_at; searchable=title; sort by created_at desc
-  - `ContactRequestAdmin`: column_list = id/email/first_name/last_name/handled/created_at; sort by created_at desc; searchable=email
-- `__init__.py`: `create_admin(app, engine)` регистрирует обе
-
-**5. Workers `services/cms/app/workers/`:**
-- `__init__.py`: RedisBroker setup (как в `services/task/app/workers/__init__.py`)
-- `actors.py`: пока пусто (или actor `notify_admins_on_contact_request` — вызывается из POST /contact-requests/)
-- `scheduler.py`:
-  - `news_scheduled_publish`: APScheduler cron `minute='*'`. SQL:
-    ```python
-    UPDATE cms.news
-       SET published = TRUE
-     WHERE published = FALSE
-       AND published_at IS NOT NULL
-       AND published_at <= now()
-    ```
-
-**6. Requirements `services/cms/requirements.txt`:**
-- Добавить (как в task/hr/user): `sqladmin==0.20.1`, `itsdangerous==2.2.0`, `dramatiq[redis,watch]==1.17.1`, `apscheduler==3.10.4`, `slowapi==0.1.9`
-
-**7. Smoke-тест:**
-- `cd services/cms && uvicorn app.main:app --port 8008` → проверить `/health/`, `/docs`, `/admin/`
-
----
-
-## Phase 3.3 — services/media/
-
-`cp -r services/_template services/media`, `SERVICE_PORT=8009`, `DB_SCHEMA=media`.
-
-### Структура
-- `app/storage.py` — абстракция:
-  - `S3Storage` через `aioboto3` (для AWS/MinIO)
-  - `LocalStorage` через `aiofiles` (когда `STORAGE_BACKEND=local`)
-  - Перенос логики из `backend/HTQWeb/storage_backends.py` (`PublicMediaStorage`, `PrivateMediaStorage`)
-- `app/models/file_metadata.py` — таблица для отслеживания загруженных файлов (id, path, owner_id, size, mime, created_at)
-- `app/api/v1/files.py`:
-  - `POST /api/media/v1/upload` — multipart, возвращает `{file_id, url}`
-  - `GET /api/media/v1/download/{path:path}` — порт `secure_media_download` из `backend/media_manager/file_views.py:60-129`:
-    - HTTP Range (206) через `StreamingResponse` + custom byte-range handler
-    - ETag + 304 Not Modified
-    - 8KB chunks
-    - Path-traversal защита (нормализация + проверка что resolved path внутри base_dir)
-  - `POST /api/media/v1/presign` — presigned URL для прямой S3-загрузки
-- `app/admin/` — file browser ModelView (читает из `file_metadata`)
-- `app/workers/`:
-  - actor `generate_thumbnail` (Pillow, по событию upload)
-  - APScheduler `cleanup_orphan_files` (еженедельно, сравнивает S3-листинг с `file_metadata`)
-- Требования: добавить `aioboto3`, `aiofiles`, `Pillow`, плюс admin/workers стек
-
-### Volume mapping
-В `docker-compose.yml`: `./backend/media:/app/data/media` для local fallback. Avatars и `news_images/` остаются в этом volume.
-
----
-
-## Phase 3.6 — Перенести backend/tasks/ → services/task/
-
-### Что уже есть в task-service
-- Модели: `task.py`, `activity.py`, `attachment.py`, `comment.py`, `label.py`, `link.py`, `notification.py`, `sequence.py`, `version.py`, `base.py` (10 файлов)
-- Admin views: 10 штук
-- Workers: `task_deadline_reminder`, `notification_dispatch`
-
-### Чего не хватает
-- Endpoints из `backend/tasks/views/` (12 ViewSets) → `services/task/app/api/v1/`:
-  - tasks, comments, attachments, links, activity, labels, versions, notifications, sequences, **calendar**, **statistics** + ещё 1 (свериться с `backend/tasks/views/__init__.py`)
-- **Возможно недостающие модели**: `Project`, `ProductionDay` (для календарного расчёта дедлайнов в `backend/scripts/dev/test_deadline.py`). Сверить с `backend/tasks/models.py`. `ProductionDay` уже есть в admin → значит модель тоже есть, но проверить `Project`
-- `app/services/calendar.py` — порт логики «рабочие/выходные дни через `ProductionDay`» (O(1) через `working_days_since_epoch`)
-
-### Контракт
-- Frontend `frontend/src/api/tasks.ts` и `frontend/src/api/calendar.ts` уже целятся в `/api/tasks/v1` — сохранить response shape как в Django ViewSets
-
----
-
-## Phase 3.4 — services/messenger/
-
-`cp -r services/_template services/messenger`, `SERVICE_PORT=8010`, `DB_SCHEMA=messenger`.
-
-### Стек
-- WebSocket: **нативный FastAPI** (`@router.websocket`), не `python-socketio`
-- Redis pub/sub: `redis.asyncio.Redis.pubsub()` (заменяет Django Channels)
-- DDD-структура 1:1 из `backend/messenger/`:
-  - `app/domain/models.py` — 6 моделей: `ChatUserReplica`, `ChatRoom`, `ChatMembership`, `EncryptedMessage`, `AuthKeyBundle`, `ChatAttachment`
-  - `app/infrastructure/` — repositories, ltree_fields, Redis pubsub bridge
-  - `app/application/` — use-cases (отправка/прочтение/typing)
-  - `app/presentation/` или `app/api/v1/ws.py` — WS consumer (порт `backend/messenger/presentation/consumers.py`)
-
-### Маршруты
-- WS: `/ws/messenger/chat/{room_id}/` (зеркало `routing.py:9-10`)
-- REST: `/api/messenger/v1/rooms/`, `/messages/`, `/attachments/`
-- **Протокол сообщений не менять** (зеркало `consumers.py:7-16`) — фронт не ломать
-
-### ChatAttachment
-- Локальный storage внутри messenger-service (свой S3 prefix `messenger/`), без round-trip в media-service
-
-### Admin: 6 ModelView
-### Workers
-- `dispatch_push_notification` (FCM/APNS — пока noop с логом, если нет ключей)
-- APScheduler `archive_old_messages` (ежедневно, msg старше 90д → cold storage)
-- `cleanup_presence` (Redis TTL по user_id)
-
-### Зависимости
-- `websockets` уже идёт с uvicorn[standard]
-- `sqlalchemy-utils` для `LtreeType` (или собственный `ltree_fields.py`)
-
----
-
-## Phase 3.5 — services/email/
-
-`cp -r services/_template services/email`, `SERVICE_PORT=8011`, `DB_SCHEMA=email`.
-
-### 5 тяжёлых модулей (порт из backend/internal_email/)
-- `crypto.py` → `app/services/crypto.py` — AES-256-GCM через `cryptography.hazmat`. **НЕ логировать plaintext**
-- `dlp_scanner.py` → `app/services/dlp.py`
-- `mta_connector.py` → `app/services/mta.py` — SMTP (`aiosmtplib`) + IMAP (`aioimaplib`)
-- `oauth.py` → `app/services/oauth.py` — Google Workspace + Microsoft 365
-- `services.py` → `app/services/email_service.py`
-
-### Модели (4 шт., из `backend/internal_email/models.py`)
-`EmailMessage`, `EmailRecipientStatus`, `EmailAttachment`, `EmailOAuthToken`
-
-### Endpoints (10 шт.)
-- `inbox`, `sent`, `drafts`, `trash` (GET/POST)
-- `send`, `draft` (POST)
-- `read/{pk}` (GET)
-- `oauth/init`, `oauth/callback`, `oauth/status`, `oauth/disconnect`
-
-### Admin: 4 ModelView
-- **Маскирование OAuth tokens** через `column_formatters`
-
-### Workers
-- APScheduler `mta_inbound_poll` (каждые 60с)
-- APScheduler `oauth_token_refresh` (каждые 30 мин)
-- Dramatiq actor `dlp_scan_attachment` (по upload)
-- Dramatiq actor `send_email` (retry с exponential backoff через middleware `Retries`)
-
-### Зависимости
-`aiosmtplib`, `aioimaplib`, `cryptography`, `httpx` (для OAuth)
-
----
-
-## Phase 4 — Cutover (big-bang релиз)
-
-### 4.1. Frontend API client refactor
-- `frontend/src/api/hr.ts` → `/api/hr/v1` ✅ уже
-- `frontend/src/api/tasks.ts`, `calendar.ts` → `/api/tasks/v1`
-- Создать: `frontend/src/api/{users,cms,media,messenger,email}.ts`
-- `frontend/src/lib/auth/` JWT эндпоинт → `/api/users/v1/token/`
-- `frontend/src/hooks/useActiveProfile.ts` → `/api/users/v1/profile/me`
-- `frontend/src/api/fileManager.ts` → `/api/media/v1/*`
-- `frontend/src/services/emailService.ts` → `/api/email/v1/*` (заодно перенести в `frontend/src/api/email.ts`)
-- `frontend/src/features/messenger/` → новый WS URL и REST префикс
-
-### 4.2. Nginx upstream-конфиг (`infra/nginx/default.conf`)
-```
-/api/users/      → user-service:8005
-/api/hr/         → hr-service:8006
-/api/tasks/      → task-service:8007
-/api/cms/        → cms-service:8008
-/api/media/      → media-service:8009
-/api/messenger/  → messenger-service:8010 (включая /ws/messenger/)
-/api/email/      → email-service:8011
-/admin/<service>/→ соответствующий сервис на /admin/
-/ws/sfu/         → sfu:4443  (без изменений)
-```
-
-### 4.3. docker-compose.yml финал
-- Удалить блок `backend:` (Django)
-- Добавить: `cms-service`, `cms-worker`, `media-service`, `media-worker`, `messenger-service`, `messenger-worker`, `email-service`, `email-worker`
-- Добавить worker-блоки для существующих: `user-worker`, `hr-worker`, `task-worker`
-- Поправить `nginx.depends_on`
-- Поправить `webtransport` context на `./webtransport`
-
-### 4.4. Удалить Django
-После validation:
-- `backend/HTQWeb/`, `manage.py`, `requirements.txt`, `entrypoint.sh`
-- Django-приложения: `hr/`, `internal_email/`, `mainView/`, `media_manager/`, `messenger/`, `tasks/`
-- `backend/webtransport/` (уже перенесено)
-- Удалить `backend/` целиком
-- Удалить корневой `Dockerfile` (если не перенесён в Phase 1)
-
-### 4.5. Database (Alembic stamp стратегия)
-В каждом новом сервисе:
-1. `alembic init`
-2. Скопировать описание существующих таблиц в `models/` (1:1 с Django)
-3. `alembic revision --autogenerate -m "initial"` → должна быть пустая миграция
-4. `alembic stamp head` против БД
-5. Дальше — нормальные миграции
-
-В конце: удалить `django_migrations` таблицу.
-
----
-
-## Verification после каждого Track
-
-- Unit-тесты в `services/<X>/tests/`
-- `docker compose up <service>-service <service>-worker` локально
-- Postman/curl smoke vs Django (response shape должен совпадать)
-- Контракт-тест с user-service (JWT validation работает)
-- sqladmin доступен по `/admin/` (с auth backend через `admin_session` cookie)
-
-## E2E browser smoke (после Phase 4)
-- Регистрация → login → профиль
-- Открыть admin для каждого сервиса (`/admin/users/`, `/admin/hr/`, ...)
-- HR: создать сотрудника, отдел
-- Tasks: создать задачу, проверить календарь
-- Messenger: WS отправка/получение
-- Email: создать черновик, OAuth callback
-- Media: загрузить файл, скачать (с Range), удалить
-- Conference (SFU): запустить звонок, WebRTC
-
----
-
-## Rollback strategy
-- Тэг `v1.0-django-final` перед cutover
-- Хранить Django docker-image (`htqweb-backend:django-final`)
-- nginx upstream через переменную (быстрый switch на `backend:8000`)
-- Данные не дублируются (alembic stamp), Django можно вернуть без потерь
-
-## Что осознанно НЕ делается
-- Нет `services/_shared/` — каждый сервис самодостаточен
-- frontend helper-скрипты не объединяются
-- БД одна (PgBouncer), per-service только схемы
-- Полное разделение БД (per-service DB) — следующая итерация, не в этом плане
-
-## Открытые вопросы
-- Admin auth UX: каждый сервис свой `/admin/` (текущий план) vs единая SPA с табами
-- WS стек: нативный FastAPI WS (текущий план) vs `python-socketio`
-- API gateway для агрегации OpenAPI: пока нет (каждый сервис свой `/docs`)
-- Migration window: 30-60 мин downtime для DB stamp + nginx switch
-
----
-
-## Технические инварианты (применять в каждом новом сервисе)
-
-- **Lifespan** через `@asynccontextmanager`, не `@app.on_event`
-- **CORS** не добавляется в сервисах — унифицируется на nginx
-- **JWT**: `JWTAdminAuthBackend` читает cookie `admin_session`, проверяет issuer + claim `is_admin: true`
-- **sqladmin**: `Admin(app, engine, base_url="/admin", authentication_backend=JWTAdminAuthBackend(secret_key=settings.jwt_secret))`
-- **Dramatiq**: `RedisBroker(url=settings.redis_url)`; импорт `from app.workers import actors as _actors  # noqa: F401` в `main.py` для регистрации брокера
-- **APScheduler**: `python -m app.workers.scheduler` отдельным процессом
-- **Requirements** для админки/воркеров (одинаково везде):
-  ```
-  sqladmin==0.20.1
-  itsdangerous==2.2.0
-  dramatiq[redis,watch]==1.17.1
-  apscheduler==3.10.4
-  ```
-- **DB schema**: каждый сервис имеет свою схему (`auth`, `hr`, `tasks`, `cms`, `media`, `messenger`, `email`), `search_path` выставляется в `connect_args.server_settings`
-- **Структура директорий внутри `app/`** строго: `core/`, `auth/`, `middleware/`, `db.py`, `models/`, `schemas/`, `repositories/` (опц.), `services/`, `api/v1/`, `admin/`, `workers/`
+Если какая-то команда даёт неожиданный результат — **записать в лог Desync detected и разобраться до начала работы.**
