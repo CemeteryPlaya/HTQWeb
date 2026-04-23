@@ -20,8 +20,18 @@ $ErrorActionPreference = 'Stop'
 # ─── Resolve paths ────────────────────────────────────────────────────────────
 $RootDir   = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $SfuDir    = Join-Path $RootDir 'sfu'
-$ToolsDir  = Join-Path $RootDir 'tools'
-$BorePath  = Join-Path $ToolsDir 'bore.exe'
+
+# Local tools cache lives outside the repo (per-user) — see docs/local-tools.md
+$ToolsDir  = Join-Path $env:LOCALAPPDATA 'HTQWeb\tools'
+
+# Prefer a system-installed bore (winget/choco) if available; otherwise fall back to the cache
+$boreCmd = Get-Command bore -ErrorAction SilentlyContinue
+if ($boreCmd) {
+    $BorePath = $boreCmd.Source
+} else {
+    $BorePath = Join-Path $ToolsDir 'bore.exe'
+}
+
 $NgrokLogOut   = Join-Path $ToolsDir 'ngrok-out.log'
 $NgrokLogErr   = Join-Path $ToolsDir 'ngrok-err.log'
 $BoreLogOut = Join-Path $ToolsDir 'bore-out.log'

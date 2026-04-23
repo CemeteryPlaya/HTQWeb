@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libc6-dev libpq-dev libjpeg62-turbo-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt gunicorn
 
 # ─── Runtime stage ──────────────────────────────────────────────────────────
@@ -34,11 +34,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /install /usr/local
 
 # Copy application code
-COPY backend/ .
+COPY . .
 
 # Remove dev artifacts that might have leaked through .dockerignore
 RUN rm -rf __pycache__ *.sqlite3 *.log media/ staticfiles/ \
-    debug_*.py debug_*.txt probe_*.py verify_system.py \
+    scripts/dev/ debug_*.py debug_*.txt probe_*.py verify_system.py \
     api_*.json tasks_output.json run_local.ps1 test_deadline.py
 
 # collectstatic without DB connection
@@ -47,7 +47,7 @@ RUN mkdir -p /app/staticfiles && \
     python manage.py collectstatic --noinput 2>/dev/null || true
 
 # Entrypoint script
-COPY backend/entrypoint.sh /app/entrypoint.sh
+COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000

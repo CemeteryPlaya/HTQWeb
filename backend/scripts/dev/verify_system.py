@@ -3,7 +3,7 @@ import django
 import sys
 
 # Настройка окружения Django
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HTQWeb.settings')
 django.setup()
 

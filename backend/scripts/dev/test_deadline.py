@@ -1,8 +1,9 @@
 import os
+import sys
 import django
 import datetime
 
-# Setup Django environment
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HTQWeb.settings')
 django.setup()
 

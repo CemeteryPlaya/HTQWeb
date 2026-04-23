@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { networkInterfaces } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const certsDir = join(__dirname, '..', 'certs');
+const certsDir = join(__dirname, '..', 'infra', 'certs');
 mkdirSync(certsDir, { recursive: true });
 
 // Auto-detect LAN IPs

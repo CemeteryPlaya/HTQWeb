@@ -82,24 +82,6 @@ class TokenPayload(BaseModel):
     iss: str
 
 
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against a hash.
-    Supports both Django PBKDF2 and bcrypt — transparent migration.
-    """
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def needs_rehash(hashed_password: str) -> bool:
-    """Check if a password hash should be upgraded to bcrypt."""
-    return pwd_context.needs_update(hashed_password)
-
-
 def create_token_pair(
     user_id: int,
     username: str,

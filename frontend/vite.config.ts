@@ -21,10 +21,9 @@ export default defineConfig(({ mode }) => {
   const httpsDisabledByEnv = isEnvFalse(env.VITE_DEV_HTTPS);
   // Resolve certs relative to this config file's directory (frontend/)
   const _certCandidates = [
-    { cert: path.resolve(__dirname, "..", "certs", "cert.pem"), key: path.resolve(__dirname, "..", "certs", "key.pem") },
-    { cert: path.resolve(__dirname, "certs", "cert.pem"), key: path.resolve(__dirname, "certs", "key.pem") },
-    { cert: path.resolve(process.cwd(), "certs", "cert.pem"), key: path.resolve(process.cwd(), "certs", "key.pem") },
-    { cert: path.resolve(process.cwd(), "..", "certs", "cert.pem"), key: path.resolve(process.cwd(), "..", "certs", "key.pem") },
+    { cert: path.resolve(__dirname, "..", "infra", "certs", "cert.pem"), key: path.resolve(__dirname, "..", "infra", "certs", "key.pem") },
+    { cert: path.resolve(process.cwd(), "infra", "certs", "cert.pem"), key: path.resolve(process.cwd(), "infra", "certs", "key.pem") },
+    { cert: path.resolve(process.cwd(), "..", "infra", "certs", "cert.pem"), key: path.resolve(process.cwd(), "..", "infra", "certs", "key.pem") },
   ];
   const _found = _certCandidates.find(p => fs.existsSync(p.cert) && fs.existsSync(p.key));
   const httpsConfig = (!httpsDisabledByEnv && _found)

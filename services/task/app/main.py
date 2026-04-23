@@ -4,12 +4,14 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.settings import settings
-from app.middleware import RequestIDMiddleware
+from app.admin import create_admin
 from app.api import v1_router
+from app.core.settings import settings
+from app.db import engine
+from app.middleware import RequestIDMiddleware
 from app.routers.health import router as health_router
+from app.workers import actors as _actors  # noqa: F401  ensures broker is configured
 
 # Configure structured logging
 logging.basicConfig(
@@ -40,19 +42,12 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     app.add_middleware(RequestIDMiddleware)
 
-    # Routers
     app.include_router(health_router)
     app.include_router(v1_router)
+
+    create_admin(app, engine)
 
     return app
 

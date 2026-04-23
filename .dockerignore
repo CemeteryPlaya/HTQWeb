@@ -42,8 +42,8 @@ READY_TO_RUN.md
 CHEATSHEET.md
 
 # ── Misc ──
-certs/
-certs.off/
+infra/certs/
+tools/
 firewall_*
 *.exe
 .stfolder*
@@ -53,6 +53,6 @@ firewall_*
 Thumbs.db
 desktop.ini
 .DS_Store
-diagnose-webrtc.js
-test_regex.js
 bundle-report.html
+**/.tsbuildinfo
+**/dist/

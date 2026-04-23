@@ -66,8 +66,12 @@ uvicorn app.main:app --reload --port 8005
 HTQWeb1/
 ├── backend/              # Django monolith (legacy)
 ├── frontend/             # React + Vite + TypeScript
-├── nginx/                # API Gateway configuration
-│   └── default.conf      # Strangler Fig routing
+├── infra/                # Infrastructure (nginx, certs, db init)
+│   ├── nginx/
+│   │   └── default.conf  # API Gateway routing
+│   ├── certs/            # Local TLS certs (gitignored)
+│   └── db/
+│       └── init-ltree.sql
 ├── services/             # Microservices (new)
 │   ├── _template/        # Cookiecutter template
 │   ├── scaffold.py       # Create new service: python scaffold.py <name> <desc>

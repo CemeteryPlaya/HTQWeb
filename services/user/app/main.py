@@ -1,35 +1,43 @@
 """
 User/Identity Service — FastAPI microservice for HTQWeb platform.
 
-This service handles user identity, authentication, registration,
-and JWT token issuance. It is the JWT authority for the entire platform.
-Part of the Strangler Fig migration pattern.
+Owns: identity, auth (JWT issuance), profile, registration, admin user mgmt,
+personal items (notes). Issues the JWT cookie used by every other service's
+sqladmin AuthenticationBackend.
 """
 
-import contextlib
 import logging
+from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from app.admin import create_admin
+from app.api.v1 import admin as admin_router
+from app.api.v1 import auth as auth_router
+from app.api.v1 import internal_sync as internal_sync_router
+from app.api.v1 import items as items_router
+from app.api.v1 import profile as profile_router
+from app.api.v1 import registration as registration_router
+from app.core.health import router as health_router
 from app.core.settings import settings
-from app.core.health import health_check, readiness_check
+from app.db import engine
 from app.middleware.request_id import RequestIDMiddleware
-from app.routers import (
-    admin,
-    auth,
-    health as health_router,
-    internal_sync,
-    profile,
-    registration,
-)
+from app.workers import actors as _actors  # noqa: F401  init broker for enqueue
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logging.info(
+        "service_startup",
+        extra={"service": settings.service_name, "port": settings.service_port},
+    )
+    yield
+    logging.info("service_shutdown", extra={"service": settings.service_name})
 
 
 def get_application() -> FastAPI:
-    """Create and configure the FastAPI application."""
-
-    # Configure structured logging
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -46,39 +54,27 @@ def get_application() -> FastAPI:
 
     app = FastAPI(
         title="User/Identity Service",
-        version="0.1.0",
+        version="0.2.0",
         description="JWT authority and user management for HTQWeb platform",
+        lifespan=lifespan,
         docs_url="/docs" if settings.service_env != "production" else None,
         redoc_url="/redoc" if settings.service_env != "production" else None,
         openapi_url="/openapi.json" if settings.service_env != "production" else None,
     )
 
-    # Middleware (order matters: last added = first executed)
     app.add_middleware(RequestIDMiddleware)
 
-    # OpenTelemetry instrumentation
     FastAPIInstrumentor.instrument_app(app)
 
-    # Routers
-    app.include_router(health_router.router)
-    app.include_router(auth.router)
-    app.include_router(registration.router)
-    app.include_router(profile.router)
-    app.include_router(admin.router)
-    app.include_router(internal_sync.router)
+    app.include_router(health_router)
+    app.include_router(auth_router.router)
+    app.include_router(registration_router.router)
+    app.include_router(profile_router.router)
+    app.include_router(admin_router.router)
+    app.include_router(items_router.router)
+    app.include_router(internal_sync_router.router)
 
-    # Lifecycle events
-    @app.on_event("startup")
-    async def startup():
-        logging.info(
-            "service_startup",
-            service="user-identity",
-            port=settings.service_port,
-        )
-
-    @app.on_event("shutdown")
-    async def shutdown():
-        logging.info("service_shutdown", service="user-identity")
+    create_admin(app, engine)
 
     return app
 

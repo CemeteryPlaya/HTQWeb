@@ -7,7 +7,7 @@ const { join } = require('path');
 const { networkInterfaces } = require('os');
 
 async function main() {
-  const certsDir = join(__dirname, '..', 'certs');
+  const certsDir = join(__dirname, '..', 'infra', 'certs');
   mkdirSync(certsDir, { recursive: true });
 
   const lanIps = [];

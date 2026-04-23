@@ -19,7 +19,7 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $projectRoot) { $projectRoot = $PSScriptRoot }
-$certsDir = Join-Path $projectRoot 'certs'
+$certsDir = Join-Path $projectRoot 'infra/certs'
 $certsDir = (New-Item -ItemType Directory -Force -Path $certsDir).FullName
 
 $certFile = Join-Path $certsDir 'cert.pem'

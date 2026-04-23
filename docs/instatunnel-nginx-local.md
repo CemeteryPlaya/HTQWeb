@@ -13,7 +13,7 @@ This works with changing tunnel domains because `server_name _;` accepts any hos
 
 Use the server block from:
 
-- `nginx/instatunnel-local-8080.conf`
+- `infra/nginx/instatunnel-local-8080.conf`
 
 Routing:
 
@@ -122,8 +122,8 @@ npm run dev
 
 ```powershell
 # terminal 3
-C:\nginx\nginx.exe -t -p C:\nginx\ -c D:\HTQWeb1\nginx\instatunnel-windows-main.conf
-C:\nginx\nginx.exe -p C:\nginx\ -c D:\HTQWeb1\nginx\instatunnel-windows-main.conf
+C:\nginx\nginx.exe -t -p C:\nginx\ -c D:\HTQWeb1\infra\nginx\instatunnel-windows-main.conf
+C:\nginx\nginx.exe -p C:\nginx\ -c D:\HTQWeb1\infra\nginx\instatunnel-windows-main.conf
 ```
 
 Reload after config changes:

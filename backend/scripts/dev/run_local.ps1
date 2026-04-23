@@ -1,6 +1,9 @@
 # Run Django locally with DB pointing to the Docker postgres container.
-# Usage: .\run_local.ps1
+# Usage: .\backend\scripts\dev\run_local.ps1   (from repo root)
 # Prerequisites: docker compose up -d db
+
+$BackendRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+Set-Location $BackendRoot
 
 if (-not $env:DB_ENGINE) { $env:DB_ENGINE = "django.db.backends.postgresql" }
 if (-not $env:DB_NAME) { $env:DB_NAME = "htqweb" }
