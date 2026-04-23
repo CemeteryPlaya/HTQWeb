@@ -5,7 +5,7 @@ The `admin_session` cookie is minted by user-service after
 using the shared JWT secret; no HTTP call is needed on every request.
 
 For first-time login via this service's own `/admin/login` form, we call
-user-service's `/api/token/` endpoint to verify credentials and receive a
+user-service's `/api/users/v1/token/` endpoint to verify credentials and receive a
 JWT, then store it in the session.
 """
 
@@ -38,7 +38,7 @@ class JWTAdminAuthBackend(AuthenticationBackend):
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
-                    f"{user_service_url}/api/token/",
+                    f"{user_service_url}/api/users/v1/token/",
                     json={"email": username, "password": password},
                 )
         except httpx.HTTPError:

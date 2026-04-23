@@ -18,18 +18,19 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const enableDevCompression = env.VITE_DEV_COMPRESSION === "true";
 
-  const httpsDisabledByEnv = isEnvFalse(env.VITE_DEV_HTTPS);
-  // Resolve certs relative to this config file's directory (frontend/)
-  const _certCandidates = [
+  // HTTPS in dev is opt-in via VITE_DEV_HTTPS=true. Default: plain HTTP on :3000
+  // (matches the current docker-compose.dev.yml setup and avoids cert headaches).
+  const httpsEnabledByEnv = (env.VITE_DEV_HTTPS || "").trim().toLowerCase() === "true";
+  const _certCandidates = httpsEnabledByEnv ? [
     { cert: path.resolve(__dirname, "..", "infra", "certs", "cert.pem"), key: path.resolve(__dirname, "..", "infra", "certs", "key.pem") },
     { cert: path.resolve(process.cwd(), "infra", "certs", "cert.pem"), key: path.resolve(process.cwd(), "infra", "certs", "key.pem") },
     { cert: path.resolve(process.cwd(), "..", "infra", "certs", "cert.pem"), key: path.resolve(process.cwd(), "..", "infra", "certs", "key.pem") },
-  ];
+  ] : [];
   const _found = _certCandidates.find(p => fs.existsSync(p.cert) && fs.existsSync(p.key));
-  const httpsConfig = (!httpsDisabledByEnv && _found)
+  const httpsConfig = (httpsEnabledByEnv && _found)
     ? { cert: fs.readFileSync(_found.cert), key: fs.readFileSync(_found.key) }
     : undefined;
-  console.log("[vite] HTTPS:", httpsConfig ? `enabled (${_found!.cert})` : "disabled");
+  console.log("[vite] HTTPS:", httpsConfig ? `enabled (${_found!.cert})` : "disabled (HTTP on :3000)");
 
   const isHttps = !!httpsConfig;
   // NOTE:
@@ -62,12 +63,10 @@ export default defineConfig(({ mode }) => {
       : {
           overlay: false,
         };
-  if (httpsDisabledByEnv) {
-    console.log("[vite] HTTPS disabled via VITE_DEV_HTTPS=false (HTTP mode on :3000)");
-  } else if (isHttps) {
-    console.log("[vite] HTTPS enabled — LAN devices can access via https://<IP>:3000");
+  if (isHttps) {
+    console.log("[vite] HTTPS enabled via VITE_DEV_HTTPS=true — LAN devices can access via https://<IP>:3000");
   } else {
-    console.log("[vite] HTTPS certs not found — using HTTP on :3000");
+    console.log("[vite] HTTP mode on :3000 (set VITE_DEV_HTTPS=true + infra/certs/ to enable TLS)");
   }
   console.log(`[vite] User service proxy target: ${userServiceTarget}`);
   console.log(`[vite] SFU WS proxy target: ${sfuWsTarget}`);
@@ -103,16 +102,18 @@ export default defineConfig(({ mode }) => {
       changeOrigin: true,
     },
     // ─── Per-service REST ───────────────────────────────────────────────────
+    // One rule per service. All backend routers expose their endpoints under
+    // /api/<service>/v1/* — see services/<service>/app/api/v1/*.py.
+    "^/api/users/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
     "^/api/hr/": {
       target: hrServiceTarget,
       changeOrigin: true,
     },
     "^/api/tasks/": {
       target: tasksServiceTarget,
-      changeOrigin: true,
-    },
-    "^/api/users/": {
-      target: userServiceTarget,
       changeOrigin: true,
     },
     "^/api/cms/": {
@@ -129,27 +130,6 @@ export default defineConfig(({ mode }) => {
     },
     "^/api/email/": {
       target: emailServiceTarget,
-      changeOrigin: true,
-    },
-    // Legacy/shared auth endpoints still served by user-service
-    "^/api/token/": {
-      target: userServiceTarget,
-      changeOrigin: true,
-    },
-    "^/api/register/": {
-      target: userServiceTarget,
-      changeOrigin: true,
-    },
-    "^/api/pending-registrations/": {
-      target: userServiceTarget,
-      changeOrigin: true,
-    },
-    "^/api/v1/profile/": {
-      target: userServiceTarget,
-      changeOrigin: true,
-    },
-    "^/api/v1/admin/users/": {
-      target: userServiceTarget,
       changeOrigin: true,
     },
     // ─── Database admin (sqladmin aggregator) ───────────────────────────────

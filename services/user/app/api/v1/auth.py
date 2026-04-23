@@ -28,7 +28,7 @@ ADMIN_COOKIE_NAME = "admin_session"
 ADMIN_COOKIE_MAX_AGE = 2 * 60 * 60  # 2 hours — matches access-token lifetime
 
 
-router = APIRouter(prefix="/api/token", tags=["auth"])
+router = APIRouter(prefix="/api/users/v1/token", tags=["auth"])
 
 
 class TokenObtainRequest(BaseModel):

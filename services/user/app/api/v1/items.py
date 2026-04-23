@@ -15,7 +15,7 @@ from app.db import get_db_session
 from app.models.item import Item
 
 
-router = APIRouter(prefix="/api/v1/items", tags=["items"])
+router = APIRouter(prefix="/api/users/v1/items", tags=["items"])
 
 
 class ItemResponse(BaseModel):

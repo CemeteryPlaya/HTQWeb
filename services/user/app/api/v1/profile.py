@@ -16,7 +16,7 @@ from app.db import get_db_session
 from app.models.user import User
 
 
-router = APIRouter(prefix="/api/v1/profile", tags=["profile"])
+router = APIRouter(prefix="/api/users/v1/profile", tags=["profile"])
 
 
 class ProfileResponse(BaseModel):
@@ -45,6 +45,7 @@ class ProfileUpdateRequest(BaseModel):
     settings: dict | None = None
 
 
+@router.get("/me", response_model=ProfileResponse)
 @router.get("/", response_model=ProfileResponse)
 async def get_profile(
     current_user: Annotated[dict, Depends(get_current_user)],
@@ -54,6 +55,7 @@ async def get_profile(
     Get the current user's profile.
 
     Replaces ProfileViewSet.retrieve().
+    Exposed at both `/profile/` and `/profile/me` (frontend uses `/me`).
     """
     result = await db.execute(select(User).where(User.id == current_user.user_id))
     user = result.scalar_one_or_none()

@@ -18,7 +18,7 @@ from app.models.user import User, UserStatus
 from app.services.auth_service import hash_password
 
 
-router = APIRouter(prefix="/api/internal", tags=["internal-sync"])
+router = APIRouter(prefix="/api/users/v1/internal", tags=["internal-sync"])
 
 
 class ProfileSyncData(BaseModel):

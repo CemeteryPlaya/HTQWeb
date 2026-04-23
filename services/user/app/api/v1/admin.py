@@ -16,7 +16,7 @@ from app.db import get_db_session
 from app.models.user import User, UserStatus
 
 
-router = APIRouter(prefix="/api/v1/admin/users", tags=["admin-users"])
+router = APIRouter(prefix="/api/users/v1/admin/users", tags=["admin-users"])
 
 
 class AdminUserResponse(BaseModel):

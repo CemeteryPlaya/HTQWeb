@@ -17,7 +17,7 @@ from app.models.user import User, UserStatus
 from app.services.auth_service import hash_password
 
 
-router = APIRouter(prefix="/api", tags=["registration"])
+router = APIRouter(prefix="/api/users/v1", tags=["registration"])
 
 
 class RegisterRequest(BaseModel):
