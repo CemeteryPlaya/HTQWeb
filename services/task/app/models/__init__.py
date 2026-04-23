@@ -16,6 +16,7 @@ from .activity import TaskActivity
 from .label import Label
 from .version import ProjectVersion, VersionStatus
 from .notification import Notification
+from .calendar import CalendarEvent, EventException
 
 __all__ = [
     "Base",
@@ -30,6 +31,8 @@ __all__ = [
     "Label",
     "ProjectVersion",
     "Notification",
+    "CalendarEvent",
+    "EventException",
     "Status",
     "Priority",
     "TaskType",

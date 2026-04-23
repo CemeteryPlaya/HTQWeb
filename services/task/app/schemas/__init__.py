@@ -19,6 +19,14 @@ from .attachment import AttachmentResponse
 from .link import LinkCreate, LinkResponse, LinkType
 from .activity import ActivityResponse
 from .notification import NotificationResponse
+from .calendar import (
+    CalendarEventBase,
+    CalendarEventCreate,
+    CalendarEventUpdate,
+    CalendarEventResponse,
+    EventExceptionBase,
+    EventExceptionResponse,
+)
 
 __all__ = [
     "DateWarning",
@@ -43,4 +51,10 @@ __all__ = [
     "LinkType",
     "ActivityResponse",
     "NotificationResponse",
+    "CalendarEventBase",
+    "CalendarEventCreate",
+    "CalendarEventUpdate",
+    "CalendarEventResponse",
+    "EventExceptionBase",
+    "EventExceptionResponse",
 ]

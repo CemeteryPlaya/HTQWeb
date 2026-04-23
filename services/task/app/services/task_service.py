@@ -187,7 +187,7 @@ class TaskService:
         self, start_date: date, working_days: int
     ) -> date | None:
         """Calculate due date using production calendar."""
-        return await ProductionDay.get_date_by_workingDays(
+        return await ProductionDay.get_date_by_working_days(
             self.session, start_date, working_days
         )
 

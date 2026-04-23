@@ -28,8 +28,10 @@ def create_admin(app: FastAPI, engine: AsyncEngine) -> Admin:
         authentication_backend=JWTAdminAuthBackend(secret_key=settings.jwt_secret),
     )
 
-    # Register ModelViews here (one import per model file in app/admin/views/):
-    # from app.admin.views.example import ExampleAdmin
-    # admin.add_view(ExampleAdmin)
+    from app.admin.views.news import NewsAdmin
+    from app.admin.views.contact_request import ContactRequestAdmin
+
+    admin.add_view(NewsAdmin)
+    admin.add_view(ContactRequestAdmin)
 
     return admin
