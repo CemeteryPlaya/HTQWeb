@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db_session
-from app.models.domain import TaskActivity
+from app.models import TaskActivity
 
 router = APIRouter(prefix="/tasks", tags=["activity"])
 

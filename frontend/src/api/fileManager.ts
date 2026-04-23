@@ -4,7 +4,7 @@
 import api from '@/api/client';
 import type { DepartmentFolder, DepartmentFile } from '@/types/fileManager';
 
-const HR = 'hr/';
+const HR = 'hr/v1/';
 
 /* Unwrap paginated or plain array response */
 function unwrap<T>(data: any): T[] {

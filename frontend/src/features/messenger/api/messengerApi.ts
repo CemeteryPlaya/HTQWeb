@@ -12,16 +12,12 @@ import type {
     SendMessagePayload,
 } from '../types';
 
-const BASE = 'messenger/';
+const BASE = 'messenger/v1/';
 
 export const messengerApi = {
     // --- Users ---
     searchUsers: (query: string) =>
         api.get<ChatUser[]>(`${BASE}users/search/`, { params: { q: query } })
-            .then(r => r.data),
-
-    searchByDepartment: (dept: string) =>
-        api.get<ChatUser[]>(`${BASE}users/search/`, { params: { department: dept } })
             .then(r => r.data),
 
     getMe: () =>
@@ -32,31 +28,26 @@ export const messengerApi = {
         api.get<ChatRoom[]>(`${BASE}rooms/`).then(r => r.data),
 
     createRoom: (payload: CreateRoomPayload) =>
-        api.post<ChatRoom>(`${BASE}rooms/create/`, payload).then(r => r.data),
+        api.post<ChatRoom>(`${BASE}rooms/`, payload).then(r => r.data),
 
     getRoom: (roomId: number) =>
-        api.get<ChatRoom>(`${BASE}rooms/${roomId}/`).then(r => r.data),
+        api.get<ChatRoom>(`${BASE}rooms/${roomId}`).then(r => r.data),
 
     deleteRoom: (roomId: number) =>
-        api.delete(`${BASE}rooms/${roomId}/delete/`).then(r => r.data),
+        api.delete(`${BASE}rooms/${roomId}`).then(r => r.data),
 
     // --- Messages ---
-    getMessages: (roomId: number, afterPts = 0, limit = 50) =>
-        api.get<ChatMessage[]>(`${BASE}rooms/${roomId}/messages/`, {
-            params: { after_pts: afterPts, limit },
+    getMessages: (roomId: number, limit = 50, offset = 0) =>
+        api.get<ChatMessage[]>(`${BASE}messages/room/${roomId}`, {
+            params: { limit, offset },
         }).then(r => r.data),
 
-    sendMessage: (roomId: number, payload: SendMessagePayload) =>
-        api.post<ChatMessage>(`${BASE}rooms/${roomId}/messages/send/`, payload)
+    sendMessage: (payload: SendMessagePayload) =>
+        api.post<ChatMessage>(`${BASE}messages/`, payload)
             .then(r => r.data),
 
-    getDifference: (roomId: number, localPts: number) =>
-        api.get<ChatMessage[]>(`${BASE}rooms/${roomId}/messages/difference/`, {
-            params: { local_pts: localPts },
-        }).then(r => r.data),
-
-    markRead: (roomId: number, pts: number) =>
-        api.post(`${BASE}rooms/${roomId}/read/`, { pts }),
+    markRead: (roomId: number, messageId: string) =>
+        api.post(`${BASE}messages/room/${roomId}/read/${messageId}`),
 
     // --- Attachments ---
     uploadAttachment: (file: File) => {
@@ -71,7 +62,7 @@ export const messengerApi = {
 
     // --- Key Bundles ---
     getKeyBundle: (userId: number) =>
-        api.get(`${BASE}keys/${userId}/`).then(r => r.data),
+        api.get(`${BASE}keys/${userId}`).then(r => r.data),
 
     uploadKeyBundle: (data: {
         identity_pub_key: string;
@@ -84,10 +75,10 @@ export const messengerApi = {
         getAllRooms: () =>
             api.get<ChatRoom[]>(`${BASE}admin/rooms/`).then(r => r.data),
 
-        getRoomMessages: (roomId: number, afterPts = 0, limit = 200) =>
-            api.get<{ room: ChatRoom; messages: ChatMessage[] }>(
-                `${BASE}admin/rooms/${roomId}/messages/`,
-                { params: { after_pts: afterPts, limit } }
+        getRoomMessages: (roomId: number, limit = 200, offset = 0) =>
+            api.get<ChatMessage[]>(
+                `${BASE}admin/rooms/${roomId}/messages`,
+                { params: { limit, offset } }
             ).then(r => r.data),
     }
 };

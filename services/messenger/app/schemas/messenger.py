@@ -42,13 +42,13 @@ class RoomCreate(BaseModel):
     participant_ids: list[int]
 
 
-class MessageAttachmentRead(BaseModel):
+class ChatAttachmentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    file_metadata_id: uuid.UUID
-    name: str
+    file_metadata_id: Optional[uuid.UUID]
+    filename: str
     size: int
-    mime: str
+    content_type: str
 
 
 class MessageRead(BaseModel):
@@ -61,7 +61,7 @@ class MessageRead(BaseModel):
     is_edited: bool
     created_at: datetime
     sender: Optional[UserReplicaRead] = None
-    attachments: list[MessageAttachmentRead] = []
+    attachments: list[ChatAttachmentRead] = []
 
 
 class MessageCreate(BaseModel):

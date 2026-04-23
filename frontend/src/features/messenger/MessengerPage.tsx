@@ -23,26 +23,17 @@ import type { ChatRoom, ChatMessage, ChatUser } from './types';
 //  Helper: decode message text from base64 (non-E2EE rooms store plaintext JSON)
 // ---------------------------------------------------------------------------
 function decodeMessageText(msg: ChatMessage): { text: string; file_url?: string; file_name?: string; mime_type?: string; } | string {
-    if (!msg.encrypted_data) return '';
-    try {
-        const binString = atob(msg.encrypted_data);
-        const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
-        const jsonStr = new TextDecoder().decode(bytes);
-        const json = JSON.parse(jsonStr);
-        if (msg.msg_type === 'file') {
-            return json;
-        }
-        return json.text || json.body || '';
-    } catch {
-        // For E2EE messages or parsing errors, show placeholder
+    if (!msg.content) return '';
+    if (!msg.is_encrypted) {
         try {
-            const binString = atob(msg.encrypted_data);
-            const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
-            return new TextDecoder().decode(bytes);
+            const json = JSON.parse(msg.content);
+            if (msg.msg_type === 'file') return json;
+            return json.text || json.body || msg.content;
         } catch {
-            return '🔒 Зашифрованное сообщение';
+            return msg.content;
         }
     }
+    return '🔒 Зашифрованное сообщение';
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +50,7 @@ function encodeMessageText(payload: any): string {
 //  Helper: get other user in direct chat
 // ---------------------------------------------------------------------------
 function getOtherMember(room: ChatRoom, myUserId: number) {
-    const other = room.memberships.find(m => m.user.user_id !== myUserId);
+    const other = room.participants.find(m => m.user_id !== myUserId);
     return other?.user || null;
 }
 
@@ -126,9 +117,10 @@ const MessengerPage: React.FC = () => {
     const sendMutation = useMutation({
         mutationFn: (payload: { text?: string; file_url?: string; file_name?: string; mime_type?: string; msg_type?: string }) => {
             if (!activeRoomId) throw new Error('No active room');
-            return messengerApi.sendMessage(activeRoomId, {
-                encrypted_data: encodeMessageText(payload),
-                msg_type: payload.msg_type || 'text',
+            return messengerApi.sendMessage({
+                room_id: activeRoomId,
+                content: JSON.stringify(payload),
+                is_encrypted: false,
             });
         },
         onSuccess: () => {
@@ -140,7 +132,11 @@ const MessengerPage: React.FC = () => {
 
     const createRoomMutation = useMutation({
         mutationFn: (data: { room_type: 'direct' | 'group', member_user_ids: number[], title?: string }) =>
-            messengerApi.createRoom(data),
+            messengerApi.createRoom({
+                room_type: data.room_type,
+                participant_ids: data.member_user_ids,
+                name: data.title
+            }),
         onSuccess: (room: ChatRoom) => {
             queryClient.invalidateQueries({ queryKey: ['messenger-rooms'] });
             setActiveRoomId(room.id);
@@ -216,10 +212,10 @@ const MessengerPage: React.FC = () => {
     const activeRoom = rooms.find(r => r.id === activeRoomId) || null;
 
     const getRoomDisplayName = (room: ChatRoom) => {
-        if (room.title) return room.title;
+        if (room.name) return room.name;
         if (me && (room.room_type === 'direct' || room.room_type === 'secret')) {
             const other = getOtherMember(room, me.user_id);
-            return other?.full_name || 'Чат';
+            return other?.username || other?.first_name || 'Чат';
         }
         return `Чат #${room.id}`;
     };
@@ -411,7 +407,7 @@ const MessengerPage: React.FC = () => {
                             ) : (
                                 rooms.map(room => {
                                     const isActive = room.id === activeRoomId;
-                                    const unread = room.memberships.find(m => m.user.user_id === me?.user_id)?.unread_count || 0;
+                                    const unread = room.participants.find(m => m.user_id === me?.user_id)?.unread_count || 0;
 
                                     return (
                                         <button
@@ -509,7 +505,7 @@ const MessengerPage: React.FC = () => {
                                             {activeRoom.room_type === 'secret'
                                                 ? 'Секретный чат · E2EE'
                                                 : activeRoom.room_type === 'group'
-                                                    ? `${activeRoom.memberships.length} участников`
+                                                    ? `${activeRoom.participants.length} участников`
                                                     : (() => {
                                                         const other = me ? getOtherMember(activeRoom, me.user_id) : null;
                                                         return other?.is_online ? '🟢 Онлайн' : (other?.position_title || '');

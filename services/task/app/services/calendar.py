@@ -1,7 +1,7 @@
 from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.domain import ProductionDay
+from app.models import ProductionDay
 
 async def calculate_due_date(
     session: AsyncSession, start_date: date, working_days: int

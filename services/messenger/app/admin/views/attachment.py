@@ -1,6 +1,6 @@
 from sqladmin import ModelView
-from app.models.domain import MessageAttachment
+from app.models.domain import ChatAttachment
 
-class MessageAttachmentAdmin(ModelView, model=MessageAttachment):
-    column_list = [MessageAttachment.id, MessageAttachment.message_id, MessageAttachment.name, MessageAttachment.size]
+class ChatAttachmentAdmin(ModelView, model=ChatAttachment):
+    column_list = [ChatAttachment.id, ChatAttachment.message_id, ChatAttachment.filename, ChatAttachment.size]
     name = "Attachment"

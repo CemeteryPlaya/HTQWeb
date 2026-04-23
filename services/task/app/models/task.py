@@ -13,6 +13,8 @@ from sqlalchemy import (
     String,
     Text,
     select,
+    Table,
+    Column,
 )
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -59,6 +61,14 @@ TRANSITIONS = {
     Status.DONE: {Status.CLOSED, Status.IN_PROGRESS},
     Status.CLOSED: {Status.OPEN},
 }
+
+
+task_labels = Table(
+    "task_labels",
+    BaseModel.metadata,
+    Column("task_id", Integer, ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True),
+    Column("label_id", Integer, ForeignKey("labels.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Task(BaseModel):
@@ -132,7 +142,7 @@ class Task(BaseModel):
     assignee = relationship("User", foreign_keys=[assignee_id])
     department = relationship("Department")
     version = relationship("ProjectVersion")
-    parent = relationship("Task", remote_side=[id], backref="subtasks")
+    parent = relationship("Task", remote_side="Task.id", backref="subtasks")
 
     comments: Mapped[list["TaskComment"]] = relationship(
         "TaskComment", back_populates="task", cascade="all, delete-orphan"

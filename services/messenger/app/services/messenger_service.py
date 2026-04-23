@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.domain import ChatUserReplica, Message, Room, RoomParticipant, MessageAttachment
+from app.models.domain import ChatUserReplica, Message, Room, RoomParticipant, ChatAttachment
 from app.schemas.messenger import MessageCreate, RoomCreate
 from app.api.socket import sio
 

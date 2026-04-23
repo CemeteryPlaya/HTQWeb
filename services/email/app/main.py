@@ -10,6 +10,9 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.core.settings import settings
+from app.core.logging import configure_logging, get_logger
+
+log = get_logger(__name__)
 
 
 @asynccontextmanager

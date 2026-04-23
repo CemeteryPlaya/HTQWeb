@@ -31,10 +31,10 @@ import {
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/';
 
 /** Маршруты, которые не требуют авторизации (POST-запросы). */
-const PUBLIC_POST_ROUTES = ['v1/contact-requests/', 'v1/register/'];
+const PUBLIC_POST_ROUTES = ['users/v1/contact-requests/', 'users/v1/register/'];
 
 /** Маршруты, к которым не применяется автообновление токена. */
-const AUTH_ENDPOINTS = ['token/', 'register/'];
+const AUTH_ENDPOINTS = ['users/v1/token/', 'users/v1/register/'];
 
 const client = axios.create({
   baseURL: API_BASE,
@@ -83,7 +83,7 @@ async function doTokenRefresh(): Promise<string> {
   if (!refresh) throw new Error('Refresh-токен отсутствует');
 
   const res = await axios.post(
-    API_BASE + 'token/refresh/',
+    API_BASE + 'users/v1/token/refresh/',
     { refresh },
     {
       withCredentials: true,

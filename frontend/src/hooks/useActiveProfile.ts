@@ -23,7 +23,7 @@ export const useActiveProfile = (options: UseActiveProfileOptions = {}) => {
   const query = useQuery({
     queryKey: profileQueryKey,
     queryFn: async () => {
-      const response = await api.get<UserProfile>('v1/profile/me/');
+      const response = await api.get<UserProfile>('users/v1/profile/me');
       writeCachedProfile(response.data);
       return response.data;
     },

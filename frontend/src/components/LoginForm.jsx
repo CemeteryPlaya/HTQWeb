@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import { usersApi } from '../api/users';
 import { setAuthTokens } from '@/lib/auth/profileStorage';
 
 function LoginForm({ onLogin }) {
@@ -10,26 +11,7 @@ function LoginForm({ onLogin }) {
     const [error, setError] = useState('');
 
     const requestToken = async (loginId, userPassword) => {
-        const payload = { email: loginId, password: userPassword };
-        try {
-            return await api.post('token/', payload, {
-                headers: { 'Content-Type': 'application/json' },
-            });
-        } catch (jsonErr) {
-            // Retry with form-urlencoded only for content-type negotiation failures (415).
-            // 401 = wrong credentials — must be shown to user, not re-sent.
-            // 5xx = server error — already handled by the global interceptor.
-            const status = jsonErr?.response?.status ?? jsonErr?.status;
-            if (status === 415) {
-                const formData = new URLSearchParams();
-                formData.set('email', loginId);
-                formData.set('password', userPassword);
-                return api.post('token/', formData.toString(), {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                });
-            }
-            throw jsonErr;
-        }
+        return await usersApi.getToken(loginId, userPassword);
     };
 
     const login = async (e) => {

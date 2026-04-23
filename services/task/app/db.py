@@ -31,11 +31,11 @@ async_session_factory = async_sessionmaker(
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency that yields a database session.
     Use in FastAPI route handlers:
-        async def my_route(db: AsyncSession = Depends(get_db)):
+        async def my_route(db: AsyncSession = Depends(get_db_session)):
     """
     async with async_session_factory() as session:
         try:
@@ -44,3 +44,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+# Alias for backward compatibility if needed
+get_db = get_db_session

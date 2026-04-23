@@ -17,6 +17,8 @@ from .label import Label
 from .version import ProjectVersion, VersionStatus
 from .notification import Notification
 from .calendar import CalendarEvent, EventException
+from .user_replica import User
+from .department_replica import Department
 
 __all__ = [
     "Base",
@@ -33,6 +35,8 @@ __all__ = [
     "Notification",
     "CalendarEvent",
     "EventException",
+    "User",
+    "Department",
     "Status",
     "Priority",
     "TaskType",

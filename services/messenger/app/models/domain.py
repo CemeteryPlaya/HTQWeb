@@ -66,16 +66,17 @@ class Message(Base, TimestampMixin):
     sender: Mapped["ChatUserReplica"] = relationship("ChatUserReplica")
 
 
-class MessageAttachment(Base, TimestampMixin):
+class ChatAttachment(Base, TimestampMixin):
     """Attachment metadata for a message."""
-    __tablename__ = "message_attachments"
+    __tablename__ = "chat_attachments"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), index=True)
-    file_metadata_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False) # Refers to media-service
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    message_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), index=True, nullable=True)
+    file_metadata_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True) # Refers to media-service if used
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
-    mime: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("chat_user_replicas.id", ondelete="CASCADE"), nullable=False)
 
 
 class UserKey(Base, TimestampMixin):

@@ -14,7 +14,7 @@ from app.models import Base  # noqa: F401
 
 # Per-service bookkeeping table — keeps task migrations isolated from
 # other services that share the same Postgres database.
-VERSION_TABLE = "alembic_version_task"
+VERSION_TABLE = "alembic_version_messenger"
 
 config = context.config
 
@@ -25,7 +25,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 logging.getLogger("alembic.runtime.migration").info(
-    "task-service alembic bookkeeping: version_table=%s", VERSION_TABLE
+    "messenger-service alembic bookkeeping: version_table=%s", VERSION_TABLE
 )
 
 target_metadata = Base.metadata

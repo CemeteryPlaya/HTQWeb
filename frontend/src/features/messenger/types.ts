@@ -47,12 +47,10 @@ export interface ChatMessage {
 export interface ChatRoom {
     id: number;
     room_type: 'direct' | 'group' | 'secret';
-    title: string;
-    avatar_url: string;
-    current_pts: number;
-    memberships: ChatMembership[];
+    name?: string;
+    is_e2ee: boolean;
+    participants: ChatMembership[];
     last_message: ChatMessage | null;
-    is_archived: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -64,10 +62,11 @@ export interface CreateRoomPayload {
 }
 
 export interface SendMessagePayload {
-    encrypted_data: string; // base64
-    msg_key?: string;       // base64
-    msg_type?: string;
-    reply_to?: number | null;
+    room_id: number;
+    content: string;
+    is_encrypted?: boolean;
+    metadata_json?: any;
+    attachment_ids?: string[];
 }
 
 // WebSocket incoming message types

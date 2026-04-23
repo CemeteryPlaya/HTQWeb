@@ -17,5 +17,5 @@ COPY app /app/app
 #   ...
 
 EXPOSE 8012
-HEALTHCHECK --interval=10s CMD curl -sf http://localhost:8012/health/ || exit 1
+HEALTHCHECK --interval=10s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8012/health/').read()" || exit 1
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8012"]

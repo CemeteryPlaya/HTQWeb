@@ -88,42 +88,6 @@ services:
         max-size: "5m"
         max-file: "3"
 
-  # ─── Django backend (Daphne ASGI) ───────────────
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      # Override local .env values for Docker networking
-      DB_HOST: pgbouncer
-      DB_PORT: 5432
-      DB_ENGINE: django.db.backends.postgresql
-      CACHE_BACKEND: django.core.cache.backends.redis.RedisCache
-      CACHE_LOCATION: redis://redis:6379/0
-    ports:
-      - "8000:8000"
-    depends_on:
-      pgbouncer:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - static_files:/app/staticfiles
-      - media_files:/app/media
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000/health/"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "5"
-
   # ─── User/Identity Service (JWT authority) ──────
   user-service:
     build:
@@ -250,6 +214,132 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ─── Messenger Service ─────────────────────────
+  messenger-service:
+    build:
+      context: ./services/messenger
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      REDIS_URL: redis://redis:6379/3
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      SERVICE_NAME: messenger-service
+      SERVICE_PORT: 8008
+    ports:
+      - "8008:8008"
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh"]
+
+  messenger-worker:
+    build: ./services/messenger
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      REDIS_URL: redis://redis:6379/3
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["dramatiq", "app.workers.actors", "--processes", "2", "--threads", "4"]
+
+  # ─── Media Service ────────────────────────────
+  media-service:
+    build:
+      context: ./services/media
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/4
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      STORAGE_BACKEND: local
+      STORAGE_PATH: /app/media
+      SERVICE_NAME: media-service
+      SERVICE_PORT: 8009
+    ports:
+      - "8009:8009"
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh"]
+
+  # ─── CMS Service ──────────────────────────────
+  cms-service:
+    build: ./services/cms
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      REDIS_URL: redis://redis:6379/5
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      SERVICE_NAME: cms-service
+      SERVICE_PORT: 8011
+    ports:
+      - "8011:8011"
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh"]
+
+  # ─── Email Service ────────────────────────────
+  email-service:
+    build: ./services/email
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      REDIS_URL: redis://redis:6379/6
+      SERVICE_NAME: email-service
+      SERVICE_PORT: 8010
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh"]
+
+  email-worker:
+    build: ./services/email
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379/6
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["dramatiq", "app.workers.actors"]
+
+  # ─── Central Admin Aggregator ──────────────────
+  admin-service:
+    build: ./services/admin
+    restart: unless-stopped
+    environment:
+      DB_HOST: pgbouncer
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-htqweb}
+      DB_USER: ${DB_USER:-htqweb}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./services/user:/services/user:ro
+      - ./services/hr:/services/hr:ro
+      - ./services/task:/services/task:ro
+      - ./services/cms:/services/cms:ro
+      - ./services/media:/services/media:ro
+      - ./services/messenger:/services/messenger:ro
+      - ./services/email:/services/email:ro
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+
   # ─── SFU (Mediasoup signaling + media) ──────────
   sfu:
     build:
@@ -315,11 +405,13 @@ services:
       - certbot_webroot:/var/www/certbot:ro
     depends_on:
       - frontend
-      - backend
       - sfu
       - hr-service
       - user-service
       - task-service
+      - messenger-service
+      - media-service
+      - cms-service
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
       interval: 10s

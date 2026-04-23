@@ -8,7 +8,7 @@ import type {
   EmployeeAccount,
 } from '@/types/hr';
 
-const HR = 'hr/';
+const HR = 'hr/v1/';
 
 /* Unwrap paginated or plain array response */
 function unwrap<T>(data: any): T[] {

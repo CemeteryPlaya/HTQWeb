@@ -1888,3 +1888,43 @@ docker images htqweb-backend
 ```
 
 Если какая-то команда даёт неожиданный результат — **записать в лог "Desync detected" и разобраться до начала работы**.
+
+---
+
+### 2026-04-23 — Session Summary (Stabilizing Phase 3.7 Services)
+
+**Выполненные действия:**
+
+1.  **Messenger Service:**
+    - Рефакторинг моделей: Переименован `MessageAttachment` -> `ChatAttachment` для соответствия архитектуре.
+    - Обновлена модель `ChatAttachment`: поля `message_id` и `file_metadata_id` сделаны опциональными (nullable), добавлено поле `uploaded_by`.
+    - Исправлен эндпоинт `mark_read`: теперь использует `RoomParticipant` вместо несуществующего `ChatMembership` и принимает `message_id`.
+    - Исправлены ошибки импорта во всех файлах сервиса (`messenger_service.py`, `schemas/messenger.py`, `admin/views/*`).
+    - Сервис успешно запускается и проходит healthcheck.
+
+2.  **CMS Service:**
+    - Исправлена ошибка `ModuleNotFoundError: email-validator`: пакет добавлен в `requirements.txt`.
+    - Сервис успешно запускается и проходит healthcheck.
+
+3.  **Task Service:**
+    - Унификация БД: `get_db` переименован в `get_db_session` (с сохранением алиаса) для единообразия с другими сервисами.
+    - Исправлены массовые ошибки импорта: `app.models.domain` заменён на `app.models` (т.к. модели в Task разнесены по файлам и экспортируются через `__init__.py`).
+    - Исправлено несоответствие полей в `TaskAttachment`: API синхронизировано с моделью (`uploaded_by_id`, `file_path`).
+    - Добавлены недостающие модели-реплики: `User` (replica) и `Department` (replica) для удовлетворения связей SQLAlchemy (relationship).
+    - Добавлена зависимость `require_admin` в `auth/dependencies.py`.
+    - Исправлена ошибка `sqlalchemy.exc.ArgumentError: Column expression expected for argument 'remote_side'` в модели `Task`.
+
+4.  **Admin Service (Aggregator):**
+    - Консолидация зависимостей: в `requirements.txt` добавлены все пакеты, необходимые для импорта моделей других сервисов (`dramatiq`, `python-socketio`, `slowapi`, `email-validator` и др.).
+    - Исправлены пути импорта для моделей Task.
+
+**Текущий статус Runtime:**
+- `db`, `redis`, `pgbouncer`: ✅ Healthy
+- `user-service`, `hr-service`: ✅ Healthy
+- `messenger-service`, `media-service`, `email-service`, `cms-service`: ✅ Healthy
+- `task-service`, `admin-service`: ✅ Healthy (Все сервисы стабилизированы и запущены).
+
+**Что необходимо выполнить:**
+1.  **Проверка Фронтенда:** Убедиться, что фронтенд корректно взаимодействует с обновлёнными эндпоинтами (особенно загрузка аттачментов в Messenger и пометка сообщений прочитанными).
+2.  **Alembic migrations:** Проверить, что `alembic_version_messenger` и другие таблицы миграций корректно отражают текущее состояние схем после переименований.
+3.  **Синхронизация реплик:** Реализовать или проверить механизмы синхронизации данных из `user-service` в реплики `messenger` и `task` (Dramatiq actors).

@@ -46,3 +46,15 @@ def get_current_user(
             detail=f"Invalid token: {exc}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def require_admin(
+    user: Annotated[TokenPayload, Depends(get_current_user)],
+) -> TokenPayload:
+    """RBAC dependency: only allow users with 'admin' role."""
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return user

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.domain import TaskSequence
+from app.models import TaskSequence
 
 async def next_task_key(session: AsyncSession, project_prefix: str) -> str:
     # SELECT last_number FROM task_sequences WHERE prefix = :p FOR UPDATE

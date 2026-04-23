@@ -3,7 +3,7 @@ from .room import RoomAdmin
 from .membership import RoomParticipantAdmin
 from .message import MessageAdmin
 from .auth_key import UserKeyAdmin
-from .attachment import MessageAttachmentAdmin
+from .attachment import ChatAttachmentAdmin
 
 __all__ = [
     "ChatUserReplicaAdmin",
@@ -11,5 +11,5 @@ __all__ = [
     "RoomParticipantAdmin",
     "MessageAdmin",
     "UserKeyAdmin",
-    "MessageAttachmentAdmin",
+    "ChatAttachmentAdmin",
 ]
