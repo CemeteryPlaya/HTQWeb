@@ -35,15 +35,19 @@ export default defineConfig(({ mode }) => {
   // NOTE:
   // 0.0.0.0 is valid as a server bind address, but not as an outbound proxy target.
   // Use loopback defaults so /api and /ws proxies work reliably in local/LAN dev.
-  const backendHttpTarget = env.VITE_BACKEND_HTTP_TARGET || "http://127.0.0.1:8000";
   const hrServiceTarget = env.VITE_HR_SERVICE_TARGET || "http://127.0.0.1:8006";
   const tasksServiceTarget = env.VITE_TASKS_SERVICE_TARGET || "http://127.0.0.1:8007";
   const userServiceTarget = env.VITE_USER_SERVICE_TARGET || "http://127.0.0.1:8005";
+  const messengerServiceTarget = env.VITE_MESSENGER_SERVICE_TARGET || "http://127.0.0.1:8008";
+  const mediaServiceTarget = env.VITE_MEDIA_SERVICE_TARGET || "http://127.0.0.1:8009";
+  const emailServiceTarget = env.VITE_EMAIL_SERVICE_TARGET || "http://127.0.0.1:8010";
+  const cmsServiceTarget = env.VITE_CMS_SERVICE_TARGET || "http://127.0.0.1:8011";
+  const adminServiceTarget = env.VITE_ADMIN_SERVICE_TARGET || "http://127.0.0.1:8012";
   // Keep SFU upstream plain WS by default (common for local/tunnel mode where TLS
   // is terminated at reverse proxy edge). If your SFU listens with TLS locally,
   // override via VITE_SFU_WS_TARGET=wss://127.0.0.1:4443.
   const sfuWsTarget = env.VITE_SFU_WS_TARGET || "ws://127.0.0.1:4443";
-  const backendWsTarget = env.VITE_BACKEND_WS_TARGET || "ws://127.0.0.1:8000";
+  const messengerWsTarget = env.VITE_MESSENGER_WS_TARGET || "ws://127.0.0.1:8008";
   const disableHmr = env.VITE_DISABLE_HMR === "true";
   const tunnelPublicHost = String(env.VITE_TUNNEL_PUBLIC_HOST || "").trim();
   const hmrConfig = disableHmr
@@ -65,7 +69,7 @@ export default defineConfig(({ mode }) => {
   } else {
     console.log("[vite] HTTPS certs not found — using HTTP on :3000");
   }
-  console.log(`[vite] Backend HTTP proxy target: ${backendHttpTarget}`);
+  console.log(`[vite] User service proxy target: ${userServiceTarget}`);
   console.log(`[vite] SFU WS proxy target: ${sfuWsTarget}`);
   if (disableHmr) {
     console.log("[vite] HMR disabled via VITE_DISABLE_HMR=true");
@@ -74,6 +78,7 @@ export default defineConfig(({ mode }) => {
   }
 
   const buildProxyConfig = () => ({
+    // ─── WebSockets ─────────────────────────────────────────────────────────
     "/ws/sfu": {
       target: sfuWsTarget,
       ws: true,
@@ -90,12 +95,14 @@ export default defineConfig(({ mode }) => {
       timeout: 15000,
       proxyTimeout: 15000,
     },
+    // Messenger socket.io (and any other /ws/* — messenger is the default home
+    // for WebSocket traffic after Django removal).
     "^/ws(?!/sfu/?).*": {
-      target: backendWsTarget,
+      target: messengerWsTarget,
       ws: true,
       changeOrigin: true,
     },
-    // Microservice routes — mirror nginx upstream order (specific before catch-all)
+    // ─── Per-service REST ───────────────────────────────────────────────────
     "^/api/hr/": {
       target: hrServiceTarget,
       changeOrigin: true,
@@ -104,6 +111,27 @@ export default defineConfig(({ mode }) => {
       target: tasksServiceTarget,
       changeOrigin: true,
     },
+    "^/api/users/": {
+      target: userServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/cms/": {
+      target: cmsServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/media/": {
+      target: mediaServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/messenger/": {
+      target: messengerServiceTarget,
+      changeOrigin: true,
+    },
+    "^/api/email/": {
+      target: emailServiceTarget,
+      changeOrigin: true,
+    },
+    // Legacy/shared auth endpoints still served by user-service
     "^/api/token/": {
       target: userServiceTarget,
       changeOrigin: true,
@@ -124,21 +152,11 @@ export default defineConfig(({ mode }) => {
       target: userServiceTarget,
       changeOrigin: true,
     },
-    // Django catch-all for remaining /api/* routes
-    "/api": {
-      target: backendHttpTarget,
-      changeOrigin: true,
-    },
-    "/media": {
-      target: backendHttpTarget,
-      changeOrigin: true,
-    },
-    "/admin": {
-      target: backendHttpTarget,
-      changeOrigin: true,
-    },
-    "/static": {
-      target: backendHttpTarget,
+    // ─── Database admin (sqladmin aggregator) ───────────────────────────────
+    // Explicitly NOT at /admin/ — that namespace is owned by the SPA
+    // (/admin/users, /admin/chats, /admin/registrations are React pages).
+    "/sqladmin": {
+      target: adminServiceTarget,
       changeOrigin: true,
     },
   });

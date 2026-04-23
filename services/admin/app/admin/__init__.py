@@ -7,7 +7,7 @@ from app.db import engine
 log = get_logger(__name__)
 
 def create_admin(app):
-    admin = Admin(app=app, engine=engine, base_url="/admin",
+    admin = Admin(app=app, engine=engine, base_url="/sqladmin",
                   title="HTQWeb Central Admin",
                   authentication_backend=JWTAdminAuthBackend(secret_key=settings.jwt_secret))
 

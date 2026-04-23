@@ -155,7 +155,7 @@ async def admin_login(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
-    next: Annotated[str, Form()] = "/admin/",
+    next: Annotated[str, Form()] = "/sqladmin/",
 ):
     """Set the `admin_session` cookie so sqladmin backends accept the user.
 

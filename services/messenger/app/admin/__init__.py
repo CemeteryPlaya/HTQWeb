@@ -12,7 +12,7 @@ from app.admin.views import (
 )
 
 def create_admin(app, engine):
-    admin = Admin(app=app, engine=engine, base_url="/admin",
+    admin = Admin(app=app, engine=engine, base_url="/sqladmin",
                   authentication_backend=JWTAdminAuthBackend(secret_key=settings.jwt_secret))
     for view in (ChatUserReplicaAdmin, RoomAdmin, RoomParticipantAdmin,
                  MessageAdmin, UserKeyAdmin, ChatAttachmentAdmin):

@@ -2085,3 +2085,49 @@ curl -b cookie localhost/admin/                                          → 200
 - Phase 4.5 (git rm backend/, git tag v1.0-fastapi-initial) — отложено.
 
 #### Commit: `0.0.2.7: Phase 4 — admin bootstrap + nginx cutover + compose workers + alembic init`
+
+---
+
+### 2026-04-24 — 0.0.2.8 — Hotfix: sqladmin перекрывал SPA /admin/* маршруты
+
+**Симптомы пользователя:**
+- Стартовая страница и `/login/` не открывались без порта.
+- `/admin/` открывался, но после этого обычные страницы были недоступны.
+- Профиль «живёт на :3000».
+
+**Корневая причина.** SPA имеет свои страницы под префиксом `/admin/` — [frontend/src/app/routing/routeDefinitions.ts:23-25](frontend/src/app/routing/routeDefinitions.ts#L23-L25):
+```
+{ path: '/admin/users', ... }
+{ path: '/admin/chats', ... }
+{ path: '/admin/registrations', ... }
+```
+В версии `0.0.2.7` я поставил в nginx `location /admin/ → admin_service`. Это забрало весь `/admin/*` namespace у SPA — React-страницы админки становились недоступны, а встроенный в sqladmin `UserAdmin` ModelView конфликтовал с `/admin/users` SPA-пути.
+
+**Решение.** sqladmin перенесён с `/admin/` на `/sqladmin/`:
+
+- Во всех 8 сервисах (`_template, admin, cms, email, hr, media, messenger, task, user`): `Admin(..., base_url="/sqladmin")` — [services/*/app/admin/__init__.py](services/).
+- `infra/nginx/default.conf`: `location /sqladmin/ → admin_service` (вместо `/admin/`). SPA `/admin/*` теперь падает в `try_files` под `location /` и уходит в `index.html` React-роутеру.
+- `services/user/app/api/v1/auth.py`: дефолт `next=/admin/` → `next=/sqladmin/` в форме `admin-session/login`.
+- `frontend/vite.config.ts`: dev-прокси для `/sqladmin` → admin-service; удалены мёртвые `/api`/`/media`/`/admin`/`/static` прокси на Django.
+
+**Сопутствующий fix — docker-compose.dev.yml.** Dev-конфиг держал зависимость от удалённого `backend` (Django) и `VITE_BACKEND_HTTP_TARGET=http://backend:8000`. Переписан:
+- Убран `backend:` override.
+- Добавлены `VITE_{USER,HR,TASKS,MESSENGER,MEDIA,EMAIL,CMS,ADMIN}_SERVICE_TARGET` для Vite-прокси.
+- `depends_on` перевешен на `user-service, hr-service, task-service`.
+- `SERVICE_ENV: development` для всех 8 сервисов (откроет `/docs` в каждом).
+
+**Verification (после рестарта):**
+```
+curl -sI localhost/             → 200 (SPA)
+curl -sI localhost/login        → 200 (SPA /login)
+curl -sI localhost/myprofile    → 200 (SPA /myprofile)
+curl -sI localhost/admin/users  → 200 (SPA — был ошибочно перехвачен в 0.0.2.7)
+curl -sI localhost/sqladmin/    → 302 /sqladmin/login (sqladmin auth redirect)
+curl -X POST localhost/sqladmin/login -d 'username=admin&password=admin123'
+                                → 302 + session cookie
+curl -b cookie localhost/sqladmin/ → 200 (dashboard, title=task-service admin)
+```
+
+**Про «:3000».** В production-режиме (обычный `docker compose up -d`) фронт живёт только на `:80` через nginx. Порт `:3000` — это Vite dev-сервер, доступен только если запустить `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` (теперь починен).
+
+**Commit:** `0.0.2.8: hotfix — remount sqladmin at /sqladmin/, fix dev compose, restore SPA /admin/* routes`

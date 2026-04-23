@@ -8,9 +8,11 @@
 # What changes vs production:
 #   - frontend: Vite dev server with HMR on :3000 (replaces one-shot build)
 #   - All services: SERVICE_ENV=development (enables /docs, verbose logs)
-#   - DB/Redis/PgBouncer: host ports exposed for local tooling
-#   - nginx: disabled (Vite proxy handles routing to microservices)
+#   - nginx: disabled in dev (Vite proxy handles routing to microservices)
 #   - frontend source mounted as volume — changes reflect immediately
+#
+# After Django removal, the Vite proxy targets the FastAPI services directly
+# (no backend:8000 — that container no longer exists).
 #
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -33,23 +35,25 @@ services:
       - /app/node_modules
     environment:
       VITE_DEV_HTTPS: "false"
-      VITE_BACKEND_HTTP_TARGET: "http://backend:8000"
+      VITE_USER_SERVICE_TARGET: "http://user-service:8005"
       VITE_HR_SERVICE_TARGET: "http://hr-service:8006"
       VITE_TASKS_SERVICE_TARGET: "http://task-service:8007"
-      VITE_USER_SERVICE_TARGET: "http://user-service:8005"
-      VITE_BACKEND_WS_TARGET: "ws://backend:8000"
+      VITE_MESSENGER_SERVICE_TARGET: "http://messenger-service:8008"
+      VITE_MEDIA_SERVICE_TARGET: "http://media-service:8009"
+      VITE_EMAIL_SERVICE_TARGET: "http://email-service:8010"
+      VITE_CMS_SERVICE_TARGET: "http://cms-service:8011"
+      VITE_ADMIN_SERVICE_TARGET: "http://admin-service:8012"
+      VITE_MESSENGER_WS_TARGET: "ws://messenger-service:8008"
       VITE_SFU_WS_TARGET: "ws://sfu:4443"
     depends_on:
-      - backend
-      - hr-service
-      - user-service
-      - task-service
+      user-service:
+        condition: service_healthy
+      hr-service:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy
 
   # ─── Enable /docs and dev-mode logs for all services ────────────────────────
-  backend:
-    environment:
-      DEBUG: "True"
-
   hr-service:
     environment:
       SERVICE_ENV: development
@@ -59,5 +63,25 @@ services:
       SERVICE_ENV: development
 
   task-service:
+    environment:
+      SERVICE_ENV: development
+
+  cms-service:
+    environment:
+      SERVICE_ENV: development
+
+  media-service:
+    environment:
+      SERVICE_ENV: development
+
+  messenger-service:
+    environment:
+      SERVICE_ENV: development
+
+  email-service:
+    environment:
+      SERVICE_ENV: development
+
+  admin-service:
     environment:
       SERVICE_ENV: development

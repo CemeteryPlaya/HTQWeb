@@ -24,7 +24,7 @@ def create_admin(app: FastAPI, engine: AsyncEngine) -> Admin:
     admin = Admin(
         app=app,
         engine=engine,
-        base_url="/admin",
+        base_url="/sqladmin",
         title=f"{settings.service_name} admin",
         authentication_backend=JWTAdminAuthBackend(secret_key=settings.jwt_secret),
     )
