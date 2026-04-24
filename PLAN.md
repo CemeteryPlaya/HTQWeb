@@ -40,7 +40,7 @@
 | 4.3 Unify user-service API prefixes + HTTP-only Vite + simplify proxy | ✅ done | `847d8fa` (0.0.2.9) | — |
 | 4.4 Fix post-login crash (profile response shape + frontend paths) | ✅ done | `1a66fed` (0.0.3.0) | — |
 | 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | `b7c37e9` (0.0.3.2) | — |
-| 4.5.1 Cut dev TLS: SFU/certbot/webtransport → production profile, Vite HTTP-only | ✅ done | pending commit `0.0.3.3` | — |
+| 4.5.1 Cut dev TLS: SFU/certbot/webtransport → production profile, Vite HTTP-only | ✅ done | `f9313bd` (0.0.3.3) | — |
 | **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
 | **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
 | **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
@@ -1156,7 +1156,7 @@ docker compose exec db psql -U htqweb -d htqweb -c "SELECT table_schema, count(*
 
 **Отклонения от плана:** нет, изменения чисто инфраструктурные.
 
-**Commit:** (текущий).
+**Commit:** `f9313bd`.
 
 ---
 
