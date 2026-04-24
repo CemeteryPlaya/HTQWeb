@@ -65,6 +65,14 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
         queryFn: () => fetchCalendarTimeline(format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')),
     });
 
+    // The timeline endpoint is not yet ported to task-service (see
+    // fetchCalendarTimeline → /api/calendar-timeline/ which 404s). Treat any
+    // malformed/absent response as empty so the widget doesn't crash the
+    // whole /myprofile page with `forEach` on undefined.
+    const safeTasks = Array.isArray(timeline?.tasks) ? timeline!.tasks : [];
+    const safeEvents = Array.isArray(timeline?.events) ? timeline!.events : [];
+    const hasTimelineData = safeTasks.length > 0 || safeEvents.length > 0;
+
     // Fetch production calendar
     const { data: prodDays } = useQuery({
         queryKey: ['production-calendar', format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
@@ -129,9 +137,15 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     const getItemsForDay = (day: Date) => {
         if (!timeline) return { events: [], tasks: [] };
         const dayStr = format(day, 'yyyy-MM-dd');
-        
+
+        // Guard shape: the `/calendar-timeline/` endpoint may return a legacy
+        // Django error page or an empty object before the timeline route is
+        // implemented in task-service. Never crash the widget over that.
+        const tasks = Array.isArray(timeline.tasks) ? timeline.tasks : [];
+        const events = Array.isArray(timeline.events) ? timeline.events : [];
+
         const dayTasks: any[] = [];
-        timeline.tasks.forEach(task => {
+        tasks.forEach(task => {
             if (task.start_date === dayStr) {
                 dayTasks.push({ ...task, isStart: true, isDeadline: false });
             }
@@ -141,7 +155,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
         });
 
         return {
-            events: timeline.events.filter(e => format(new Date(e.start_at), 'yyyy-MM-dd') === dayStr),
+            events: events.filter(e => format(new Date(e.start_at), 'yyyy-MM-dd') === dayStr),
             tasks: dayTasks
         };
     };
@@ -406,7 +420,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                     ) : (
                         <ScrollArea className={cn("p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700", compact ? "h-[500px]" : "h-[750px]")}>
                             <div className="space-y-4 md:space-y-8">
-                                {!timeline || (timeline.events.length === 0 && timeline.tasks.length === 0) ? (
+                                {!hasTimelineData ? (
                                     <div className="text-center py-20 md:py-32 text-muted-foreground flex flex-col items-center gap-4">
                                         <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted/50 flex items-center justify-center">
                                             <CalendarIcon className="h-6 w-6 md:h-8 md:w-8 opacity-20" />
@@ -436,7 +450,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                                                 </div>
                                             </div>
                                         ))}
-                                        {timeline.events.sort((a,b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()).map(ev => (
+                                        {safeEvents.slice().sort((a,b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()).map(ev => (
                                             <div key={ev.id} className={cn("flex gap-4 md:gap-6 p-4 md:p-6 rounded-2xl md:rounded-3xl border bg-card hover:shadow-xl transition-all relative overflow-hidden group hover:border-primary/20 border-muted/20", ev.event_type === 'conference' && "bg-pink-500/5 border-pink-500/10 hover:border-pink-500/20")}>
                                                 <div className={cn(
                                                     "w-1 md:w-2 h-full absolute left-0 top-0",
@@ -486,7 +500,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                                                 </div>
                                             </div>
                                         ))}
-                                        {timeline.tasks.map(task => (
+                                        {safeTasks.map(task => (
                                             <div key={task.id} className="flex gap-4 md:gap-6 p-4 md:p-6 rounded-2xl md:rounded-3xl border bg-orange-500/5 hover:bg-orange-500/10 transition-all relative border-orange-500/10 group hover:shadow-xl">
                                                 <div className="w-1 md:w-2 h-full absolute left-0 top-0 bg-orange-500" />
                                                 <div className="flex-1">
