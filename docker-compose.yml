@@ -588,6 +588,9 @@ services:
         condition: service_healthy
 
   # ─── SFU (Mediasoup signaling + media) ──────────
+  # Conference / WebRTC — requires TLS certs in production. Disabled in dev
+  # (the `/conference` page is the only consumer; re-enable with
+  # `docker compose --profile production up`).
   sfu:
     build:
       context: ./sfu
@@ -596,6 +599,8 @@ services:
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
+    profiles:
+      - production
     restart: unless-stopped
     environment:
       SFU_PORT: 4443
@@ -684,6 +689,11 @@ services:
   #   docker compose run --rm certbot renew && docker compose restart nginx
   certbot:
     image: certbot/certbot:latest
+    # Only needed in production (Let's Encrypt issuance + renewal for nginx).
+    # Dev flow is plain HTTP; this container stays off the default profile
+    # so it doesn't spin up pointlessly on localhost.
+    profiles:
+      - production
     volumes:
       - certbot_conf:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot
@@ -697,10 +707,14 @@ services:
         max-file: "2"
 
   # ─── WebTransport Proxy (QUIC signaling) ────────
+  # Uses a self-signed cert from wt_certs volume and only makes sense in front
+  # of the SFU. Off in dev along with SFU.
   webtransport:
     build:
       context: ./backend/webtransport
       dockerfile: Dockerfile
+    profiles:
+      - production
     restart: unless-stopped
     environment:
       SFU_WS_URL: "ws://sfu:4443"

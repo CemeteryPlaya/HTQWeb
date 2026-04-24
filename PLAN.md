@@ -40,6 +40,7 @@
 | 4.3 Unify user-service API prefixes + HTTP-only Vite + simplify proxy | ✅ done | `847d8fa` (0.0.2.9) | — |
 | 4.4 Fix post-login crash (profile response shape + frontend paths) | ✅ done | `1a66fed` (0.0.3.0) | — |
 | 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | `b7c37e9` (0.0.3.2) | — |
+| 4.5.1 Cut dev TLS: SFU/certbot/webtransport → production profile, Vite HTTP-only | ✅ done | pending commit `0.0.3.3` | — |
 | **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
 | **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
 | **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
@@ -1119,6 +1120,45 @@ docker compose exec db psql -U htqweb -d htqweb -c "SELECT table_schema, count(*
 ---
 
 ## Лог выполненных фаз (reverse chronological)
+
+### 2026-04-24 — 0.0.3.3 — Cut dev TLS (SFU + webtransport + certbot → production profile; Vite HTTP-only)
+
+**Проблема.** На фронте `/` и остальной SPA работал только через HTTPS, потому что `VITE_DEV_HTTPS=true` и Vite грузил `infra/certs/{cert,key}.pem`. Единственный реальный потребитель TLS — SFU для WebRTC — сейчас не используется. 3 контейнера (`sfu`, `certbot`, `webtransport`) крутились впустую и тянули cert-ы.
+
+**Что сделано.**
+- `frontend/.env` — `VITE_DEV_HTTPS=true` → `false` (комментарий: как включить обратно при необходимости /conference).
+- `docker-compose.yml` — `sfu`, `certbot`, `webtransport` переведены под `profiles: [production]` (к nginx, который был переведён в 4.5). Dev-compose теперь не поднимает ничего TLS-зависимого.
+- Удалены `infra/certs/cert.pem`, `infra/certs/key.pem`. `infra/certs/generate.mjs` оставлен для восстановления при нужде.
+- Остановлены и удалены запущенные `sfu`/`certbot`/`webtransport` контейнеры.
+
+**Verification (11/11 smoke зелёные):**
+| Проверка | Результат |
+|---|---|
+| 8 сервисов `/health/` (8005–8012) | все 200 ✓ |
+| Dev-compose containers TLS-free | 28 контейнеров, 12 healthy; нет sfu/certbot/webtransport/nginx |
+| HTTPS-порты наружу (443/4443/4433) | 0 экспозиций |
+| login admin/admin123 | OK |
+| `GET /profile/me` + `PATCH /profile/me` multipart | 200 |
+| CMS публичный POST + admin stats | 201 / 200 |
+| user-service pending-registrations | 200 |
+| client-errors + client-events | 202 / 202 |
+| HR employees list + Tasks list | 200 / 200 |
+| Avatar upload end-to-end (S2S JWT) | 200 + запись в `media.audit_log` |
+
+**Непроверено:**
+- **Frontend Vite dev server** — запущен локально (host node, не docker), Claude не рестартил его. Пользователю нужно `Ctrl+C` + `npm run dev` в `frontend/`, чтобы подхватились новые `VITE_DEV_HTTPS=false` из `.env`. После этого `http://localhost:3000/` должен открываться без SSL-предупреждений.
+- `/conference` страница (WebRTC) — пока не работает в dev (нужен SFU). При необходимости:
+  ```
+  node infra/certs/generate.mjs        # регенерируем self-signed
+  echo VITE_DEV_HTTPS=true >> frontend/.env
+  docker compose --profile production up -d sfu webtransport
+  ```
+
+**Отклонения от плана:** нет, изменения чисто инфраструктурные.
+
+**Commit:** (текущий).
+
+---
 
 ### 2026-04-24 — 0.0.3.2 — Phase 4.5 endpoint backfill + pre-deploy comprehensive logging
 
