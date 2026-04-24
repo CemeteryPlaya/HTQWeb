@@ -32,10 +32,16 @@ export const ConferenceNotifier = () => {
     useEffect(() => {
         if (!timeline || !isAuth) return;
 
+        // `/api/calendar-timeline/` isn't yet ported to task-service, so
+        // responses may not carry an `events` array. Never crash the whole
+        // SPA (this component is mounted globally) — just skip.
+        const events = Array.isArray(timeline.events) ? timeline.events : [];
+        if (events.length === 0) return;
+
         const checkConferences = () => {
             const currentTime = new Date();
-            
-            timeline.events.forEach(ev => {
+
+            events.forEach(ev => {
                 if (ev.event_type !== 'conference' || !ev.conference_room_id) return;
                 
                 const startTime = new Date(ev.start_at);
