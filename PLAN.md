@@ -41,6 +41,8 @@
 | 4.4 Fix post-login crash (profile response shape + frontend paths) | ✅ done | `1a66fed` (0.0.3.0) | — |
 | 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | `b7c37e9` (0.0.3.2) | — |
 | 4.5.1 Cut dev TLS: SFU/certbot/webtransport → production profile, Vite HTTP-only | ✅ done | `f9313bd` (0.0.3.3) | — |
+| 4.5.2 Hotfix: CalendarWidget null-safe timeline (/myprofile crash) | ✅ done | `a24cd02` | — |
+| 4.5.3 Hotfix: harden calendar API + ConferenceNotifier (crash on every page after login) | ✅ done | `77aa49c` | — |
 | **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
 | **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
 | **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
@@ -58,7 +60,53 @@
 
 ---
 
-## Что уже работает (зафиксировано на 0.0.3.0)
+## 🧭 Backlog / что предстоит в порядке приоритета
+
+Плоский список «что делать дальше». Порядок — оптимальный от срочного к плановому. Каждый пункт пригоден как карточка в отдельный коммит.
+
+### Критично (разблокирует текущий dev-flow)
+1. **Port `/api/calendar-timeline/` + `/api/production-calendar/` → task-service.**
+   Фронт (`CalendarWidget`, `ConferenceNotifier`) живёт только потому что вызовы сейчас защищены пустыми массивами. В task-service есть `calendar.py`, но нет `/timeline/` (агрегирует tasks + events) и `/production-calendar/` (список ProductionDay). Паттерн — зеркало Django `CalendarTimelineViewSet` + `ProductionDayViewSet`.
+   Минимум: `GET /api/tasks/v1/calendar/timeline/?start=&end=` → `{tasks: [...], events: [...]}`, `GET /api/tasks/v1/calendar/production/?start=&end=` → `[{date, day_type, ...}]`.
+   Плюс: обновить `frontend/src/api/calendar.ts` на новые префиксы.
+
+2. **Schema cleanup `audit_log` в hr / task / messenger / email** (тот же грабли pgbouncer search_path, что в 0.0.3.2 для media/cms).
+   Для каждого сервиса: (a) добавить `__table_args__ = {"schema": "<svc>"}` в `models/audit_log.py`; (b) создать миграцию `00N_audit_log_schema.py` (`CREATE TABLE <svc>.audit_log` + перенос рядов из public, если они там накопились). Шаблон миграции — `services/cms/alembic/versions/002_audit_log_schema.py`.
+
+### Высокий приоритет (готовит cutover)
+3. **Phase 4.6 Data migration Django → service schemas.**
+   Пропускается если prod-данных Django нет. Если есть — см. [docker compose exec db pg_dump] + per-table INSERT SELECT.
+
+4. **Phase 4.8 Удалить `backend/` (Django).**
+   Зависит от 4.6 (если есть данные) и 4.7 (schema cleanup). После удаления: `git tag v1.0-fastapi-initial`.
+
+### Фичи / качество
+5. **Phase 5.1 Messenger Socket.IO серверные handlers** (сейчас `api/socket.py` — pass-stubs). JWT validation в `connect`, `join_room` с проверкой membership, emit `message_new`/`message_read`/`user_typing`.
+
+6. **Phase 5.2 User-replica sync** (Redis pub/sub на `user.upserted` + одноразовый rebuild actor).
+
+7. **Phase 5.3 Dev ergonomics** — HMR включить (`VITE_DISABLE_HMR=false` в override), убрать мёртвые ENV из `vite.config.ts`.
+
+8. **Phase 5.4 Observability smoke** — поднять Loki+Promtail+Grafana, подтвердить сбор логов, настроить alert на error-rate.
+
+### Prod-готовность
+9. **Phase 6.1 Testing infrastructure** — per-service `tests/conftest.py` с testcontainers + критические сценарии (login, change-password, CRUD, WS).
+
+10. **Phase 6.2 Static analysis** — `ruff check + format`, `mypy --strict-optional`, `bandit -ll` по всем services.
+
+11. **Phase 6.3 Dependency audit** — `pip-audit` + `npm audit --audit-level=high` + Dependabot конфиг.
+
+12. **Phase 7.1 E2E browser smoke** — Playwright suite (регистрация/login/hr/tasks/messenger/email/media/conference).
+
+13. **Phase 7.2 Production cutover** — certbot cert issuance, uncomment HTTPS блок в nginx, secure cookies, cron на renew.
+
+14. **Phase 7.3 Runbook + backup + alerts** — `docs/runbook.md`, `pg_dump` cron, Grafana alert rules.
+
+15. **Phase 7.4 Финальный tag** — `v1.0-fastapi-production` + release notes.
+
+---
+
+## Что уже работает (зафиксировано на 0.0.3.3 + hotfix `77aa49c`)
 
 - 8 FastAPI-сервисов `(healthy)` в dev compose:
   `user:8005, hr:8006, task:8007, messenger:8008, media:8009, email:8010, cms:8011, admin:8012`
@@ -70,6 +118,11 @@
 - Admin-flow: `admin/admin123` → `POST /sqladmin/login` → session cookie → `/sqladmin/` dashboard.
 - Login flow: `POST /api/users/v1/token/` → JWT (claim `is_admin = is_staff OR is_superuser`).
 - Alembic initial migrations применены для всех 7 сервисов со своей схемой.
+- Dev-compose полностью без TLS: sfu/certbot/webtransport/nginx под `profiles: [production]`. Vite на `:3000` в HTTP-режиме (`VITE_DEV_HTTPS=false`).
+- SPA не крашится на global-mount компонентах: `CalendarWidget` + `ConferenceNotifier` + `calendar.ts` API-функции защищены `Array.isArray(...) ? ... : []` на случай 404 от не-портированного `/api/calendar-timeline/`.
+- S2S auth для avatar upload (user-service → media-service) через `SERVICE_JWT_SECRET` + `X-User-Id` header. `media.audit_log` и `cms.audit_log` schema-qualified (pgbouncer search-path drift устранён в этих двух сервисах).
+- Frontend телеметрия: `AppErrorBoundary` + `window.onerror`/`unhandledrejection` → `POST /api/users/v1/client-errors`, `logUserAction({action:"login_success|failed|logout"})` → `POST /api/users/v1/client-events`.
+- Backend structlog-события в user-service: `token_issued`, `password_changed`, `profile_updated`, `user_registered|approved|rejected`, `login_failed` с reason и др.
 
 ---
 
@@ -1120,6 +1173,25 @@ docker compose exec db psql -U htqweb -d htqweb -c "SELECT table_schema, count(*
 ---
 
 ## Лог выполненных фаз (reverse chronological)
+
+### 2026-04-24 — Hotfix pair: SPA загружалось с `TypeError: ... undefined (reading 'forEach')`
+
+**Commits:** `a24cd02` (CalendarWidget) + `77aa49c` (ConferenceNotifier + calendar API).
+
+**Симптом.** После логина любая страница (`/myprofile`, `/`, `/hr/*`, ...) падала через `AppErrorBoundary` с сообщением «Something went wrong — Cannot read properties of undefined (reading 'forEach')».
+
+**Root cause.** `<ConferenceNotifier />` монтируется глобально в [App.tsx:85](frontend/src/App.tsx#L85) при `hasAccessToken`. На любой странице дёргал `fetchCalendarTimeline()` по легаси-пути `/api/calendar-timeline/` (ещё не портирован в task-service). Ответ приходил без полей `tasks`/`events`, и `timeline.events.forEach(...)` в useEffect валил всё приложение. Тот же паттерн — в `CalendarWidget` (5 мест).
+
+**Fix (defense in depth):**
+1. `frontend/src/api/calendar.ts` — `fetchCalendarTimeline` теперь ВСЕГДА возвращает `{tasks: [], events: []}` с массивами гарантированного типа; try/catch на axios-ошибку + `Array.isArray(...) ? ... : []` на каждое поле. Аналогично усилены `fetchProductionCalendar` и `fetchCalendarEvents`.
+2. `frontend/src/components/ConferenceNotifier.tsx` — перед итерацией `Array.isArray(timeline.events)` + ранний `return` если массив пустой.
+3. `frontend/src/components/calendar/CalendarWidget.tsx` — введены нормализованные `safeTasks`/`safeEvents` + `hasTimelineData` флаг; заменены все 5 прямых обращений к `timeline.tasks`/`timeline.events` (forEach, filter, sort+map, map, проверка длины).
+
+**Verification.** После перезапуска Vite (`npm run dev`) все страницы открываются, `AppErrorBoundary` не срабатывает. Календарь-виджет и конференц-уведомления показывают пустое состояние — это ожидаемо, потому что backend-эндпоинт не реализован.
+
+**В backlog осталось:** _Критично #1_ — порт `/api/calendar-timeline/` + `/production-calendar/` в task-service (сейчас защищены только empty-state на фронте).
+
+---
 
 ### 2026-04-24 — 0.0.3.3 — Cut dev TLS (SFU + webtransport + certbot → production profile; Vite HTTP-only)
 
