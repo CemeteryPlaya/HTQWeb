@@ -11,10 +11,23 @@ from app.core.settings import settings
 
 
 class TokenPayload(BaseModel):
-    """Decoded JWT payload."""
+    """Decoded JWT payload.
+
+    Mirrors the claims emitted by ``auth_service.create_token_pair``. Extra
+    claims are tolerated so adding a new field to the token doesn't require
+    touching this schema.
+    """
+
+    model_config = {"extra": "ignore"}
+
     user_id: int
     token_type: str
     exp: int
+    username: str | None = None
+    email: str | None = None
+    is_staff: bool = False
+    is_superuser: bool = False
+    is_admin: bool = False
 
 
 security = HTTPBearer()

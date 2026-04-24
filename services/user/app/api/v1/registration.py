@@ -6,6 +6,7 @@ Replaces Django's RegisterView and PendingRegistrationViewSet.
 
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
@@ -15,6 +16,9 @@ from app.auth.dependencies import get_current_user
 from app.db import get_db_session
 from app.models.user import User, UserStatus
 from app.services.auth_service import hash_password
+
+
+log = structlog.get_logger(__name__)
 
 
 router = APIRouter(prefix="/api/users/v1", tags=["registration"])
@@ -81,6 +85,8 @@ async def register(
     db.add(user)
     await db.flush()
     await db.refresh(user)
+
+    log.info("user_registered", user_id=user.id, email=user.email, username=user.username)
 
     return RegisterResponse(
         id=user.id,
@@ -153,6 +159,13 @@ async def approve_registration(
     user.status = UserStatus.ACTIVE
     await db.commit()
 
+    log.info(
+        "user_approved",
+        user_id=user.id,
+        email=user.email,
+        approved_by=current_user.user_id,
+    )
+
 
 @router.post("/pending-registrations/{user_id}/reject/", status_code=204)
 async def reject_registration(
@@ -184,3 +197,10 @@ async def reject_registration(
 
     user.status = UserStatus.REJECTED
     await db.commit()
+
+    log.info(
+        "user_rejected",
+        user_id=user.id,
+        email=user.email,
+        rejected_by=current_user.user_id,
+    )

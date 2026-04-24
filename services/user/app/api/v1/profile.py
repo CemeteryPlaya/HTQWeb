@@ -6,16 +6,35 @@ React SPA expects (camelCase aliases, `roles`, `fio`, etc.), so no frontend
 changes are needed to light up the post-login page.
 """
 
+import json
+import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+import structlog
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.core.settings import settings
 from app.db import get_db_session
 from app.models.user import User
+from app.services.auth_service import hash_password, verify_password
+from app.services.service_tokens import issue_service_token
+
+
+log = structlog.get_logger(__name__)
 
 
 router = APIRouter(prefix="/api/users/v1/profile", tags=["profile"])
@@ -102,16 +121,16 @@ class ProfileResponse(BaseModel):
     updated_at: str | None
 
 
-class ProfileUpdateRequest(BaseModel):
-    first_name: str | None = None
-    last_name: str | None = None
-    firstName: str | None = None
-    lastName: str | None = None
-    patronymic: str | None = None
-    display_name: str | None = None
-    bio: str | None = None
-    phone: str | None = None
-    settings: dict | None = None
+class ChangePasswordRequest(BaseModel):
+    """Change-password payload.
+
+    ``current_password`` is required for ordinary voluntary changes. When
+    ``User.must_change_password`` is true (admin-forced reset), the current
+    password check is relaxed so the blocked user can escape the force-screen.
+    """
+
+    new_password: str = Field(..., min_length=8)
+    current_password: str | None = None
 
 
 @router.get("/me", response_model=ProfileResponse)
@@ -125,33 +144,158 @@ async def get_profile(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    log.info("profile_requested", user_id=user.id)
     return _build_response(user)
 
 
 @router.patch("/me", response_model=ProfileResponse)
 @router.patch("/", response_model=ProfileResponse)
 async def update_profile(
-    request: ProfileUpdateRequest,
+    request: Request,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    # Profile fields — any combination may be present. Accept both snake_case
+    # and camelCase aliases because the frontend mixes both.
+    display_name: Annotated[str | None, Form()] = None,
+    firstName: Annotated[str | None, Form(alias="firstName")] = None,
+    first_name: Annotated[str | None, Form()] = None,
+    lastName: Annotated[str | None, Form(alias="lastName")] = None,
+    last_name: Annotated[str | None, Form()] = None,
+    patronymic: Annotated[str | None, Form()] = None,
+    bio: Annotated[str | None, Form()] = None,
+    phone: Annotated[str | None, Form()] = None,
+    settings_json: Annotated[str | None, Form(alias="settings")] = None,
+    avatar: Annotated[UploadFile | None, File()] = None,
 ):
-    """Patch the current user's profile. Accepts both snake_case and camelCase keys."""
+    """Patch the current user's profile.
+
+    Content-Type: multipart/form-data (the frontend sends FormData so it can
+    optionally attach an avatar file). When ``avatar`` is present, the file is
+    forwarded to media-service via an S2S JWT (``SERVICE_JWT_SECRET``) and the
+    returned download URL is persisted to ``user.avatar_url``.
+    """
     result = await db.execute(select(User).where(User.id == current_user.user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    payload = request.model_dump(exclude_unset=True)
-    # Coalesce camelCase aliases into the underlying column names.
-    if "firstName" in payload:
-        payload["first_name"] = payload.pop("firstName")
-    if "lastName" in payload:
-        payload["last_name"] = payload.pop("lastName")
+    changes: dict = {}
 
-    for field, value in payload.items():
-        if hasattr(user, field):
+    # Name fields — coalesce camelCase aliases, then diff against current values.
+    effective_first = firstName if firstName is not None else first_name
+    effective_last = lastName if lastName is not None else last_name
+
+    for field, value in [
+        ("display_name", display_name),
+        ("first_name", effective_first),
+        ("last_name", effective_last),
+        ("patronymic", patronymic),
+        ("bio", bio),
+        ("phone", phone),
+    ]:
+        if value is not None and getattr(user, field, None) != value:
+            changes[field] = {"from": getattr(user, field, None), "to": value}
             setattr(user, field, value)
+
+    if settings_json is not None:
+        try:
+            parsed = json.loads(settings_json) if settings_json else {}
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="settings must be valid JSON")
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=400, detail="settings must be a JSON object")
+        if parsed != (user.settings or {}):
+            changes["settings"] = "updated"
+            user.settings = parsed
+
+    # Avatar upload: forward to media-service with an S2S JWT + X-User-Id header.
+    if avatar is not None and avatar.filename:
+        data = await avatar.read()
+        token = issue_service_token()
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(
+                    f"{settings.media_service_url}/api/media/v1/files/",
+                    files={
+                        "file": (
+                            avatar.filename,
+                            data,
+                            avatar.content_type or "application/octet-stream",
+                        ),
+                    },
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "X-User-Id": str(user.id),
+                    },
+                )
+                resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            log.error(
+                "avatar_upload_failed",
+                user_id=user.id,
+                error=repr(exc),
+                status=getattr(getattr(exc, "response", None), "status_code", None),
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="Avatar upload failed (media-service unavailable)",
+            )
+
+        body = resp.json()
+        # media-service returns computed `url` plus `id`/`path`.
+        new_url = body.get("url") or f"/api/media/v1/files/{body['id']}"
+        changes["avatar_url"] = {"from": user.avatar_url, "to": new_url}
+        user.avatar_url = new_url
+
+    if changes:
+        await db.flush()
 
     await db.commit()
     await db.refresh(user)
+
+    log.info(
+        "profile_updated",
+        user_id=user.id,
+        fields=list(changes.keys()),
+        via_multipart=True,
+    )
     return _build_response(user)
+
+
+@router.post("/change-password", status_code=200)
+@router.post("/change-password/", status_code=200)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> dict[str, str]:
+    """Change the current user's password.
+
+    If ``must_change_password`` flag is set (forced reset), ``current_password``
+    is optional; otherwise it must match the stored hash.
+    """
+    result = await db.execute(select(User).where(User.id == current_user.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not user.must_change_password:
+        if not payload.current_password or not verify_password(
+            payload.current_password, user.password_hash
+        ):
+            log.info("password_change_rejected", user_id=user.id, reason="wrong_current")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect",
+            )
+
+    user.password_hash = hash_password(payload.new_password)
+    user.must_change_password = False
+    await db.commit()
+
+    log.info(
+        "password_changed",
+        user_id=user.id,
+        forced=not bool(payload.current_password),
+    )
+    return {"detail": "Password changed successfully"}

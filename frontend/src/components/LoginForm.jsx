@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import { usersApi } from '../api/users';
 import { setAuthTokens } from '@/lib/auth/profileStorage';
+import { logUserAction } from '@/lib/telemetry';
 
 function LoginForm({ onLogin }) {
     const { t } = useTranslation();
@@ -41,9 +42,18 @@ function LoginForm({ onLogin }) {
                 refresh: res?.data?.refresh,
             });
 
+            logUserAction({ action: 'login_success', meta: { login_id: loginId } });
+
             if (onLogin) onLogin();
         } catch (err) {
             console.error('[LoginForm] Ошибка входа:', err);
+            logUserAction({
+                action: 'login_failed',
+                meta: {
+                    login_id: loginId,
+                    status: err?.response?.status ?? err?.status ?? null,
+                },
+            });
 
             // Interceptor уже извлёк сообщение из тела ответа для 5xx ошибок
             if (err?.isServerError) {

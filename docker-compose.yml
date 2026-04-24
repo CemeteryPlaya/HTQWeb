@@ -112,6 +112,11 @@ services:
       SERVICE_NAME: user-identity
       SERVICE_PORT: 8005
       SERVICE_ENV: ${SERVICE_ENV:-production}
+      # S2S — for avatar upload (user-service → media-service).
+      # MUST match media-service.SERVICE_JWT_SECRET below.
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:-change-me-service-secret}
+      SERVICE_JWT_ALGORITHM: HS256
+      MEDIA_SERVICE_URL: http://media-service:8009
     ports:
       - "8005:8005"
     depends_on:
@@ -396,6 +401,11 @@ services:
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/4
       JWT_SECRET: ${JWT_SECRET:-change-me-to-django-secret-key}
+      # S2S — MUST match user-service.SERVICE_JWT_SECRET above. When a JWT has
+      # claim `service=True`, media-service accepts the call as internal and
+      # reads X-User-Id header for ownership.
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:-change-me-service-secret}
+      SERVICE_JWT_ALGORITHM: HS256
       STORAGE_BACKEND: local
       STORAGE_PATH: /app/media
       SERVICE_NAME: media-service
@@ -626,9 +636,14 @@ services:
     restart: "no"
 
   # ─── Nginx (reverse proxy + frontend + SSL) ─────
+  # Only starts under the "production" profile. In dev, Vite on :3000 proxies
+  # directly to each FastAPI service, so nginx isn't needed and stale upstream
+  # resolution would leave the container in an unhealthy state.
   nginx:
     image: fholzer/nginx-brotli:latest
     restart: unless-stopped
+    profiles:
+      - production
     ports:
       - "80:80"
       - "443:443"

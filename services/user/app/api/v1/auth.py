@@ -7,6 +7,7 @@ This is the entry point for all platform authentication.
 
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
@@ -22,6 +23,9 @@ from app.services.auth_service import (
     decode_token,
     verify_password,
 )
+
+
+log = structlog.get_logger(__name__)
 
 
 ADMIN_COOKIE_NAME = "admin_session"
@@ -74,18 +78,27 @@ async def obtain_token(
     user = result.scalar_one_or_none()
 
     if user is None:
+        log.info("login_failed", login_id=request.email, reason="user_not_found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
 
     if user.status != UserStatus.ACTIVE:
+        log.info(
+            "login_failed",
+            login_id=request.email,
+            user_id=user.id,
+            reason="inactive",
+            status=user.status.value if user.status else None,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Account is not activated",
         )
 
     if not verify_password(request.password, user.password_hash):
+        log.info("login_failed", login_id=request.email, user_id=user.id, reason="wrong_password")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -98,6 +111,13 @@ async def obtain_token(
         email=user.email,
         is_staff=user.is_staff,
         is_superuser=user.is_superuser,
+    )
+
+    log.info(
+        "token_issued",
+        user_id=user.id,
+        username=user.username,
+        is_admin=bool(user.is_staff or user.is_superuser),
     )
 
     return TokenResponse(
@@ -142,6 +162,8 @@ async def refresh_token(
         is_staff=user.is_staff,
         is_superuser=user.is_superuser,
     )
+
+    log.info("token_refreshed", user_id=user.id)
 
     return TokenRefreshResponse(access=tokens.access)
 
@@ -201,6 +223,7 @@ async def admin_login(
         samesite="lax",
         path="/",
     )
+    log.info("admin_session_issued", user_id=user.id, username=user.username, next=next)
     return response
 
 

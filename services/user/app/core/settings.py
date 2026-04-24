@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     log_level: str = "INFO"
 
+    # Service-to-service (S2S) auth — shared secret for internal calls
+    # (user-service → media-service when uploading avatars, etc.)
+    service_jwt_secret: str = "change-me-service-secret"
+    service_jwt_algorithm: str = "HS256"
+
+    # Downstream service URLs
+    media_service_url: str = "http://media-service:8009"
+
     # Circuit Breaker (for legacy fallback calls)
     circuit_failure_threshold: int = 5
     circuit_recovery_timeout: int = 30

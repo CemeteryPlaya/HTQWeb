@@ -17,6 +17,9 @@ from app.models.base import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
+    # Schema-qualified to survive PgBouncer transaction-mode pooling where
+    # per-connection search_path may not propagate reliably.
+    __table_args__ = {"schema": "media"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)

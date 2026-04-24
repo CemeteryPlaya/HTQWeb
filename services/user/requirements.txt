@@ -3,8 +3,10 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.12.4
 pydantic-settings==2.11.0
+email-validator==2.2.0
+python-multipart==0.0.19  # required for Form/File endpoints (profile avatar upload)
 
-# HTTP Client (for downstream calls)
+# HTTP Client (for downstream calls, incl. S2S media upload)
 httpx==0.28.1
 
 # JWT Authentication

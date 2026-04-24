@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
+import { reportClientError } from '@/lib/telemetry';
+
 interface AppErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -21,6 +23,12 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    reportClientError({
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack ?? undefined,
+      url: window.location.href,
+    });
   }
 
   render() {

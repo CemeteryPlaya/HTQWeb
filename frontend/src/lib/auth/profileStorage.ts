@@ -183,6 +183,17 @@ export const clearAuthStorage = (): void => {
     return;
   }
 
+  // Fire-and-forget audit event BEFORE dropping the token, so the request
+  // still carries the Authorization header and Loki can attribute the logout.
+  try {
+    // Dynamic import to avoid circular dependency at module init.
+    void import('@/lib/telemetry').then(({ logUserAction }) => {
+      logUserAction({ action: 'logout' });
+    });
+  } catch {
+    // ignore — telemetry must never break logout.
+  }
+
   removeLocalStorage(ACCESS_TOKEN_KEY);
   removeLocalStorage(REFRESH_TOKEN_KEY);
   removeLocalStorage(CACHED_PROFILE_KEY);

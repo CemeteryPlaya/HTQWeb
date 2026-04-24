@@ -68,3 +68,4 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+.claude

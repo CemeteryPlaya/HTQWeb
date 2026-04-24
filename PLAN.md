@@ -39,7 +39,7 @@
 | 4.2 Hotfix sqladmin `/admin/` → `/sqladmin/` + dev compose fix | ✅ done | `27faf38` (0.0.2.8) | — |
 | 4.3 Unify user-service API prefixes + HTTP-only Vite + simplify proxy | ✅ done | `847d8fa` (0.0.2.9) | — |
 | 4.4 Fix post-login crash (profile response shape + frontend paths) | ✅ done | `1a66fed` (0.0.3.0) | — |
-| **4.5 Backend endpoint backfill (change-password, avatar upload, etc.)** | ⬜ pending | — | — |
+| 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | pending commit `0.0.3.2` | — |
 | **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
 | **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
 | **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
@@ -1119,6 +1119,72 @@ docker compose exec db psql -U htqweb -d htqweb -c "SELECT table_schema, count(*
 ---
 
 ## Лог выполненных фаз (reverse chronological)
+
+### 2026-04-24 — 0.0.3.2 — Phase 4.5 endpoint backfill + pre-deploy comprehensive logging
+
+**Commit:** (текущий) — SERVICE_JWT_SECRET S2S + change-password + avatar + client telemetry + cms audit schema fix.
+
+**Что сделано.**
+
+_Backfill endpoints:_
+- `POST /api/users/v1/profile/change-password` — принимает new_password + опционально current_password (current_password не требуется при must_change_password=true). 200 + JSON `{detail}`. Срабатывает событие `password_changed` в structlog.
+- `PATCH /api/users/v1/profile/me` переписан на `multipart/form-data`: принимает Form-поля (display_name, firstName/lastName, patronymic, bio, phone, settings=JSON) + опциональный `avatar` UploadFile. При наличии avatar — POST через httpx на `http://media-service:8009/api/media/v1/files/` с `SERVICE_JWT_SECRET` и `X-User-Id` header. Возвращает полный ProfileResponse с обновлённым `avatarUrl`.
+- `POST /api/users/v1/client-errors` и `/client-events` — приём frontend-телеметрии (fatal errors + user-action audit). 202 Accepted; events идут в structlog (→ Loki).
+- CMS `GET /api/cms/v1/contact-requests/stats` — уже существовал, проверен. `POST /` публичный + rate-limit 3/min — работает.
+- user-service `GET /pending-registrations/` — пофиксен `TokenPayload` в dependencies (добавлены `is_staff/is_superuser/is_admin/username/email` + `model_config={"extra": "ignore"}`), 500 → 200.
+
+_S2S infrastructure:_
+- `services/user/app/services/service_tokens.py` (новый) — `issue_service_token()` выпускает короткоживущий (60s) JWT с claim `service=True`, подписанный `SERVICE_JWT_SECRET`.
+- `services/media/app/auth/dependencies.py` — расширен: принимает и user JWT (по `JWT_SECRET`) и service JWT (по `SERVICE_JWT_SECRET`). При service JWT читает `X-User-Id` header для корректного `owner_id`.
+- `services/media/app/api/v1/files.py` — `upload_file` правильно резолвит `owner_id` для S2S-вызовов.
+- `services/media/app/schemas/file.py` — добавлен `computed_field url: str = "/api/media/v1/files/{id}"` для возврата готового download URL в upload response.
+- Settings в user-service + media-service: добавлены `service_jwt_secret`, `service_jwt_algorithm`, `media_service_url`.
+- docker-compose.yml: `SERVICE_JWT_SECRET` добавлен в env user-service + media-service (должны совпадать).
+- `.env.example` + `.env`: добавлен `SERVICE_JWT_SECRET`.
+
+_Backend structlog events (критические пути user-service):_
+- `user_registered`, `user_approved`, `user_rejected` (registration.py)
+- `token_issued`, `token_refreshed`, `admin_session_issued`, `login_failed` с reason=user_not_found|inactive|wrong_password (auth.py)
+- `password_changed`, `password_change_rejected`, `profile_updated`, `profile_requested`, `avatar_upload_failed` (profile.py)
+- `frontend_client_error` (error), `frontend_user_action` (info) — из client_errors.py
+
+_Frontend telemetry:_
+- `frontend/src/lib/telemetry.ts` (новый): `reportClientError()`, `logUserAction()`, `installGlobalErrorHandlers()` с keepalive fetch.
+- `frontend/src/app/components/AppErrorBoundary.tsx`: `componentDidCatch` теперь вызывает `reportClientError` → backend пишет в Loki.
+- `frontend/src/main.tsx`: `installGlobalErrorHandlers()` при старте приложения (ловит `window.onerror` + `unhandledrejection`).
+- `frontend/src/components/LoginForm.jsx`: `logUserAction({action:"login_success"|"login_failed", meta:...})`.
+- `frontend/src/lib/auth/profileStorage.ts`: `clearAuthStorage()` fire-and-forget `logUserAction({action:"logout"})` ДО очистки токена.
+
+_Infra + DB fixes (обнаружены при smoke):_
+- nginx переведён под `profiles: [production]` в docker-compose.yml — в dev не поднимается (209 unhealthy streak устранён; dev ходит через Vite proxy).
+- Создана миграция `services/media/alembic/versions/002_add_audit_log.py` — `media.audit_log` отсутствовал, блокировал upload.
+- Создана миграция `services/cms/alembic/versions/002_audit_log_schema.py` — `audit_log` был в public вместо cms (pgbouncer transaction-mode search_path drift).
+- `services/media/app/models/audit_log.py` + `services/cms/app/models/audit_log.py`: добавлен `__table_args__ = {"schema": ...}`  для стабильности через pgbouncer.
+- user-service: добавлен `python-multipart` + `email-validator` в requirements.txt.
+- user-service `TokenPayload` расширен (is_staff/is_superuser/is_admin/username/email) с `extra="ignore"`.
+
+**Verification (все зелёное):**
+- 8 FastAPI сервисов `/health/` → 200 (email-service 8010 internal-only, nginx в production profile).
+- `POST /profile/change-password` с wrong current → 400 ✓; с correct → 200 + login с новым паролем работает ✓.
+- `PATCH /profile/me` multipart + avatar.jpg → 200 с `avatarUrl=/api/media/v1/files/{uuid}` + запись в `media.audit_log(action=file_uploaded, via_service=true)`.
+- `POST /api/cms/v1/contact-requests/` анонимный → 201 + запись в `cms.audit_log(action=contact_request_submitted)`.
+- `GET /api/cms/v1/contact-requests/stats` → `{unhandled: N}`.
+- `GET /api/users/v1/pending-registrations/` admin → `[]` (pending реально нет).
+- `POST /api/users/v1/client-errors` и `/client-events` → 202 + структурированные события в docker logs.
+- structlog events видны в docker compose logs user-service (token_issued, password_changed, profile_updated, frontend_client_error, frontend_user_action).
+
+**Непроверено / отложено:**
+- Browser smoke (открытие http://localhost:3000, реальный login, avatar в DevTools Network). Dev-сервер frontend отдельно запущенным пользователем — не гоняли в этой сессии.
+- Loki/Promtail/Grafana UI-проверка (сбор логов). Pending в Phase 5.4.
+- Аналогичный schema-fix для audit_log в hr/task/messenger/email (может проявиться тем же симптомом при первом использовании). Вынесено в Phase 4.7.
+- nginx healthcheck command (`wget` on listener) не пофиксен — nginx просто выведен из dev compose через profile.
+
+**Отклонения от плана:**
+- В плане было "единый коммит 0.0.3.2" — так и делаем (все изменения ниже единым коммитом).
+- Audit для user-service — не создавали отдельную `auth.audit_log` таблицу; вместо этого все события идут в structlog (→ Loki). Долгосрочно — можно добавить.
+- ProfileSidebar null-safety — уже была корректной (`data?.unhandled ?? 0`, `Array.isArray(data) ? data.length : 0`), не трогали.
+
+---
 
 ### 2026-04-24 — 0.0.3.0 — Post-login crash fix
 

@@ -17,6 +17,10 @@ from app.models.base import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
+    # Schema-qualified: PgBouncer in transaction mode doesn't reliably
+    # propagate connection-level search_path, so unqualified inserts land
+    # in public instead of cms. Pinning the schema on the model fixes it.
+    __table_args__ = {"schema": "cms"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)

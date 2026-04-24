@@ -16,6 +16,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.admin import create_admin
 from app.api.v1 import admin as admin_router
 from app.api.v1 import auth as auth_router
+from app.api.v1 import client_errors as client_errors_router
 from app.api.v1 import internal_sync as internal_sync_router
 from app.api.v1 import items as items_router
 from app.api.v1 import profile as profile_router
@@ -74,6 +75,7 @@ def get_application() -> FastAPI:
     app.include_router(admin_router.router)
     app.include_router(items_router.router)
     app.include_router(internal_sync_router.router)
+    app.include_router(client_errors_router.router)
 
     create_admin(app, engine)
 

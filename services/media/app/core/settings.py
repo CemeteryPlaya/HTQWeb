@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     log_level: str = "INFO"
 
+    # Service-to-service auth — MUST match user-service.service_jwt_secret.
+    # A valid service JWT bypasses the regular user-JWT user_id check and is
+    # trusted for cross-service uploads (e.g., user-service posting avatars).
+    service_jwt_secret: str = "change-me-service-secret"
+    service_jwt_algorithm: str = "HS256"
+
     # Storage
     storage_backend: str = "local"  # local | s3
     media_root: str = "/app/data/media"

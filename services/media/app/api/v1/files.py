@@ -70,11 +70,23 @@ async def upload_file(
     storage = get_storage()
     await storage.save(path, data)
 
+    # owner_id: when called by a regular user, use their JWT.user_id.
+    # When called by another service (S2S JWT), read X-User-Id header
+    # which the caller forwards so file ownership still resolves.
+    owner_id = user.user_id
+    if owner_id is None and user.is_service:
+        raw = request.headers.get("x-user-id")
+        if raw:
+            try:
+                owner_id = int(raw)
+            except ValueError:
+                owner_id = None
+
     meta = FileMetadata(
         id=file_uuid,
         path=path,
         original_filename=file.filename or "",
-        owner_id=user.user_id,
+        owner_id=owner_id,
         size=len(data),
         mime=file.content_type or "application/octet-stream",
         storage_backend=settings.storage_backend,
@@ -85,14 +97,25 @@ async def upload_file(
 
     await record_action(
         session,
-        user_id=user.user_id,
+        user_id=owner_id,
         action="file_uploaded",
         resource_type="FileMetadata",
         resource_id=str(meta.id),
-        changes={"path": path, "size": meta.size, "mime": meta.mime},
+        changes={
+            "path": path,
+            "size": meta.size,
+            "mime": meta.mime,
+            "via_service": user.is_service,
+        },
         request=request,
     )
-    log.info("file_uploaded", file_id=str(meta.id), size=meta.size, by=user.user_id)
+    log.info(
+        "file_uploaded",
+        file_id=str(meta.id),
+        size=meta.size,
+        owner_id=owner_id,
+        via_service=user.is_service,
+    )
 
     # Optional: enqueue thumbnail generation if it's an image
     if meta.mime.startswith("image/"):
