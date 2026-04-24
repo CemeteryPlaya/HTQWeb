@@ -26,13 +26,13 @@ const AdminRegistrations = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ['pending-registrations'],
     queryFn: async () => {
-      const res = await api.get('v1/admin/pending-registrations/');
+      const res = await api.get('users/v1/pending-registrations/');
       return res.data as PendingUser[];
     },
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id: number) => api.post(`v1/admin/pending-registrations/${id}/approve/`),
+    mutationFn: (id: number) => api.post(`users/v1/pending-registrations/${id}/approve/`),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['pending-registrations'] });
       toast.success(t('admin.registrations.approved'));
@@ -40,7 +40,7 @@ const AdminRegistrations = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (id: number) => api.post(`v1/admin/pending-registrations/${id}/reject/`),
+    mutationFn: (id: number) => api.post(`users/v1/pending-registrations/${id}/reject/`),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['pending-registrations'] });
       toast.success(t('admin.registrations.rejected'));

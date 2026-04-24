@@ -16,7 +16,7 @@ export const ForcePasswordChange = () => {
 
     const mutation = useMutation({
         mutationFn: async (new_password: string) => {
-            const res = await api.post('v1/profile/change-password/', { new_password });
+            const res = await api.post('users/v1/profile/change-password/', { new_password });
             return res.data;
         },
         onSuccess: () => {

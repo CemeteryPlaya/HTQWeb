@@ -32,7 +32,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
                     <h2 className="text-2xl font-bold">{profile.fio || profile.display_name || profile.email}</h2>
                     <p className="text-muted-foreground">{profile.email}</p>
                     <div className="flex flex-wrap gap-2 mt-2 justify-center md:justify-start">
-                        {profile.roles.map(role => (
+                        {(profile.roles ?? []).map(role => (
                             <Badge key={role} variant="secondary">{role}</Badge>
                         ))}
                     </div>

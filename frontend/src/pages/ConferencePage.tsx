@@ -489,7 +489,7 @@ export const ConferencePage = () => {
   const { data: userProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const res = await api.get<UserProfile>('v1/profile/me/');
+      const res = await api.get<UserProfile>('users/v1/profile/me');
       return res.data;
     },
     enabled: !!token,
@@ -498,7 +498,7 @@ export const ConferencePage = () => {
   const { data: conferenceConfig, isLoading: isConferenceConfigLoading } = useQuery({
     queryKey: ['conference-config'],
     queryFn: async () => {
-      const res = await api.get<ConferenceRuntimeConfig>('v1/conference/config/');
+      const res = await api.get<ConferenceRuntimeConfig>('cms/v1/conference/config');
       return res.data;
     },
     enabled: !!token,

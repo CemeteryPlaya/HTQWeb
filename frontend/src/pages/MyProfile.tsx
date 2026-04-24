@@ -26,7 +26,7 @@ const MyProfile = () => {
     const { data: serverProfile, isLoading, error } = useQuery({
         queryKey: ['profile'],
         queryFn: async () => {
-            const res = await api.get<UserProfile>('v1/profile/me/');
+            const res = await api.get<UserProfile>('users/v1/profile/me');
             writeCachedProfile(res.data);
             return res.data;
         }
@@ -47,7 +47,7 @@ const MyProfile = () => {
             if (data.settings) formData.append('settings', JSON.stringify(data.settings));
             if (data.avatar) formData.append('avatar', data.avatar);
 
-            const res = await api.patch<UserProfile>('v1/profile/me/', formData, {
+            const res = await api.patch<UserProfile>('users/v1/profile/me', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             return res.data;

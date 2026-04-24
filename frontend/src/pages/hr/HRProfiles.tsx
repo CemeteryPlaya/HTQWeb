@@ -43,14 +43,14 @@ const HRProfiles = () => {
   const { data: profiles, isLoading, error } = useQuery({
     queryKey: ['hr-profiles'],
     queryFn: async () => {
-      const res = await api.get('v1/profile/');
+      const res = await api.get('users/v1/profile/');
       return res.data as UserProfile[];
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const res = await api.patch(`v1/profile/${id}/`, data);
+      const res = await api.patch(`users/v1/profile/${id}/`, data);
       return res.data;
     },
     onSuccess: () => {

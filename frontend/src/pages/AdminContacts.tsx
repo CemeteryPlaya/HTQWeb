@@ -26,7 +26,7 @@ const AdminContacts = () => {
   const { data: contacts, isLoading, error } = useQuery({
     queryKey: ['admin-contacts'],
     queryFn: async () => {
-      const res = await api.get<ContactRequest[]>('v1/contact-requests/');
+      const res = await api.get<ContactRequest[]>('cms/v1/contact-requests/');
       return res.data;
     },
     retry: false,
@@ -38,7 +38,7 @@ const AdminContacts = () => {
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const res = await api.get('v1/profile/me/');
+      const res = await api.get('users/v1/profile/me');
       return res.data;
     },
     retry: false,

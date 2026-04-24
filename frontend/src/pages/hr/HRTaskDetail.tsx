@@ -105,7 +105,7 @@ const HRTaskDetail: React.FC = () => {
   const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const res = await api.get<UserProfile>('v1/profile/me/');
+      const res = await api.get<UserProfile>('users/v1/profile/me');
       return res.data;
     },
   });

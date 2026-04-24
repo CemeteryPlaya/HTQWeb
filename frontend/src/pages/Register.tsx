@@ -44,7 +44,7 @@ const Register = () => {
     const onSubmit = async (data: RegisterFormData) => {
         setIsLoading(true);
         try {
-            await api.post('v1/register/', {
+            await api.post('users/v1/register/', {
                 full_name: data.fullName,
                 email: data.email,
                 password: data.password

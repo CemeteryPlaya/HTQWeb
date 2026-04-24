@@ -23,7 +23,7 @@ const AdminUsers = () => {
     const { data: users, isLoading, error } = useQuery({
         queryKey: ['admin-users'],
         queryFn: async () => {
-            const res = await api.get<AdminUser[]>('v1/admin/users/');
+            const res = await api.get<AdminUser[]>('users/v1/admin/users/');
             return res.data;
         }
     });

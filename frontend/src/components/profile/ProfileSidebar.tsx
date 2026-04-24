@@ -171,7 +171,7 @@ const UnreadContactsBadge: React.FC = () => {
     const { data, error } = useQuery({
         queryKey: ['contact-requests-stats'],
         queryFn: async () => {
-            const res = await api.get('v1/contact-requests/stats/');
+            const res = await api.get('cms/v1/contact-requests/stats/');
             return res.data;
         },
         retry: false,
@@ -188,7 +188,7 @@ const PendingRegistrationsBadge: React.FC = () => {
     const { data, error } = useQuery({
         queryKey: ['pending-registrations-count'],
         queryFn: async () => {
-            const res = await api.get('v1/admin/pending-registrations/');
+            const res = await api.get('users/v1/pending-registrations/');
             return res.data;
         },
         retry: false,

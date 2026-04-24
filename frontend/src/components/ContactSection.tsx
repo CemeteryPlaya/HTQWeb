@@ -91,7 +91,7 @@ const FormFields = () => {
     }
     setLoading(true);
     try {
-      await api.post('v1/contact-requests/', {
+      await api.post('cms/v1/contact-requests/', {
         first_name: firstName,
         last_name: lastName,
         email,
