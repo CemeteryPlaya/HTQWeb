@@ -39,7 +39,7 @@
 | 4.2 Hotfix sqladmin `/admin/` → `/sqladmin/` + dev compose fix | ✅ done | `27faf38` (0.0.2.8) | — |
 | 4.3 Unify user-service API prefixes + HTTP-only Vite + simplify proxy | ✅ done | `847d8fa` (0.0.2.9) | — |
 | 4.4 Fix post-login crash (profile response shape + frontend paths) | ✅ done | `1a66fed` (0.0.3.0) | — |
-| 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | pending commit `0.0.3.2` | — |
+| 4.5 Backend endpoint backfill + pre-deploy comprehensive logging | ✅ done | `b7c37e9` (0.0.3.2) | — |
 | **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
 | **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
 | **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
@@ -1122,7 +1122,7 @@ docker compose exec db psql -U htqweb -d htqweb -c "SELECT table_schema, count(*
 
 ### 2026-04-24 — 0.0.3.2 — Phase 4.5 endpoint backfill + pre-deploy comprehensive logging
 
-**Commit:** (текущий) — SERVICE_JWT_SECRET S2S + change-password + avatar + client telemetry + cms audit schema fix.
+**Commit:** `b7c37e9` — SERVICE_JWT_SECRET S2S + change-password + avatar + client telemetry + cms audit schema fix.
 
 **Что сделано.**
 
