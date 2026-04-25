@@ -44,8 +44,8 @@
 | 4.5.2 Hotfix: CalendarWidget null-safe timeline (/myprofile crash) | ✅ done | `a24cd02` | — |
 | 4.5.3 Hotfix: harden calendar API + ConferenceNotifier (crash on every page after login) | ✅ done | `77aa49c` | — |
 | 4.6 Data migration from Django tables | ⏭ skipped | — | fresh dev, нет production-данных |
-| 4.7 Schema cleanup (move stray tables into proper schemas) | ✅ done | (this commit) | — |
-| 4.8 Удалить `backend/` (Django) | ✅ done | (this commit) | `v1.0-fastapi-initial` |
+| 4.7 Schema cleanup (move stray tables into proper schemas) | ✅ done | `592dab2` (0.1.0) | — |
+| 4.8 Удалить `backend/` (Django) | ✅ done | `592dab2` (0.1.0) | `v1.0-fastapi-initial` |
 | **5.1 Messenger Socket.IO серверная реализация** | ⬜ pending | — | — |
 | **5.2 User-replica sync actors (Dramatiq)** | ⬜ pending | — | — |
 | **5.3 Dev ergonomics (HMR, Vite config sanity)** | ⬜ pending | — | — |
@@ -1418,7 +1418,7 @@ docker compose up -d --build  # backend Django поднимется обратн
 
 **Что осталось pending:** 5.1 (messenger Socket.IO handlers), 5.2 (user-replica sync), 5.3 (HMR), 5.4 (observability smoke), 6.1-6.3 (тесты, статанализ, deps), 7.1-7.4 (E2E, HTTPS, runbook, финальный tag).
 
-**Commit:** `(this commit)`.
+**Commit:** `592dab2`.
 
 ---
 
