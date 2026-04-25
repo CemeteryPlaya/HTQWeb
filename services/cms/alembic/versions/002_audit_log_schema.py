@@ -62,8 +62,11 @@ def upgrade() -> None:
         )
 
     # Migrate any rows the service wrote into the wrongly-located
-    # public.audit_log before this fix (best-effort; ignore if column set
-    # differs, missing table, or duplicate ids).
+    # public.audit_log OR auth.audit_log before this fix (best-effort;
+    # ignore if column set differs, missing table, or duplicate ids).
+    # Drop the stale source tables once we've absorbed them — otherwise
+    # other services' 003_move_to_own_schema migrations would race over
+    # the same physical row set.
     op.execute(
         """
         DO $$
@@ -77,6 +80,18 @@ def upgrade() -> None:
                    ip_address, user_agent, correlation_id, created_at
             FROM public.audit_log
             ON CONFLICT DO NOTHING;
+            DROP TABLE public.audit_log;
+          END IF;
+          IF to_regclass('auth.audit_log') IS NOT NULL THEN
+            INSERT INTO cms.audit_log (
+              user_id, action, resource_type, resource_id, changes,
+              ip_address, user_agent, correlation_id, created_at
+            )
+            SELECT user_id, action, resource_type, resource_id, changes,
+                   ip_address, user_agent, correlation_id, created_at
+            FROM auth.audit_log
+            ON CONFLICT DO NOTHING;
+            DROP TABLE auth.audit_log;
           END IF;
         END
         $$;

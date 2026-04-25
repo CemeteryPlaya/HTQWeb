@@ -63,21 +63,32 @@ uvicorn app.main:app --reload --port 8005
 ## Project Structure
 
 ```
-HTQWeb1/
-├── backend/              # Django monolith (legacy)
-├── frontend/             # React + Vite + TypeScript
-├── infra/                # Infrastructure (nginx, certs, db init)
+HTQWeb/
+├── frontend/             # React + Vite + TypeScript SPA
+├── infra/                # Infrastructure (nginx, certs, db init, logging)
 │   ├── nginx/
 │   │   └── default.conf  # API Gateway routing
 │   ├── certs/            # Local TLS certs (gitignored)
-│   └── db/
-│       └── init-ltree.sql
-├── services/             # Microservices (new)
-│   ├── _template/        # Cookiecutter template
+│   ├── db/
+│   │   └── init-ltree.sql
+│   └── logging/          # Loki + Promtail + Grafana provisioning
+├── services/             # FastAPI microservices
+│   ├── _template/        # Cookiecutter template for new services
 │   ├── scaffold.py       # Create new service: python scaffold.py <name> <desc>
-│   ├── user/             # User/Identity Service (JWT authority)
+│   ├── user/             # User/Identity Service (JWT authority, :8005)
+│   ├── hr/               # HR Service (employees, departments, :8006)
+│   ├── task/             # Task Service (tasks, calendar, :8007)
+│   ├── messenger/        # Messenger Service (chat, Socket.IO, :8008)
+│   ├── media/            # Media Service (uploads, thumbnails, :8009)
+│   ├── email/            # Email Service (SMTP/IMAP, DLP, OAuth, :8010)
+│   ├── cms/              # CMS Service (news, contact requests, :8011)
+│   ├── admin/            # Admin Aggregator (sqladmin dashboard, :8012)
 │   └── README.md         # Services documentation
-├── docker-compose.yml    # Full stack orchestration
+├── webtransport/         # WebTransport QUIC signalling proxy for SFU
+├── sfu/                  # Mediasoup SFU (media routing for /conference)
+├── docker-compose.yml    # Production stack
+├── docker-compose.dev.yml # Dev override (Vite HMR on :3000, /docs enabled)
+├── PLAN.md               # Migration plan + execution log
 ├── API.md                # API documentation + service contracts
 └── README.md             # This file
 ```

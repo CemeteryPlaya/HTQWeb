@@ -43,9 +43,9 @@
 | 4.5.1 Cut dev TLS: SFU/certbot/webtransport → production profile, Vite HTTP-only | ✅ done | `f9313bd` (0.0.3.3) | — |
 | 4.5.2 Hotfix: CalendarWidget null-safe timeline (/myprofile crash) | ✅ done | `a24cd02` | — |
 | 4.5.3 Hotfix: harden calendar API + ConferenceNotifier (crash on every page after login) | ✅ done | `77aa49c` | — |
-| **4.6 Data migration from Django tables into service schemas** | ⬜ pending | — | — |
-| **4.7 Schema cleanup (move stray tables into proper schemas)** | ⬜ pending | — | — |
-| **4.8 Удалить `backend/` (Django)** | ⬜ pending | — | `v1.0-fastapi-initial` |
+| 4.6 Data migration from Django tables | ⏭ skipped | — | fresh dev, нет production-данных |
+| 4.7 Schema cleanup (move stray tables into proper schemas) | ✅ done | (this commit) | — |
+| 4.8 Удалить `backend/` (Django) | ✅ done | (this commit) | `v1.0-fastapi-initial` |
 | **5.1 Messenger Socket.IO серверная реализация** | ⬜ pending | — | — |
 | **5.2 User-replica sync actors (Dramatiq)** | ⬜ pending | — | — |
 | **5.3 Dev ergonomics (HMR, Vite config sanity)** | ⬜ pending | — | — |
@@ -1362,6 +1362,63 @@ _Infra + DB fixes (обнаружены при smoke):_
 121 файлов, +6322/−99. `services/admin/` создан как аггрегатор. Cms/media/messenger/email полностью наполнены. Initial alembic infra. Observability propagation везде.
 
 **Commit:** `56bb6a0`.
+
+---
+
+### 2026-04-25 — 0.1.0 — Phase 4.7 + 4.8: schema cleanup + Django removal
+
+**Контекст:** ответ пользователя «fresh dev — данных нет» позволил пропустить Phase 4.6 (data migration). Чистая cutover-операция: разложить таблицы по своим схемам и физически удалить Django.
+
+**Phase 4.7 — Schema cleanup**
+
+Исходная проблема: messenger/email таблицы лежали в `auth` (а не в собственных схемах) из-за `ALTER ROLE htqweb SET search_path = auth, ...` который сделал auth первой схемой при `CREATE TABLE` без qualifier. Plus `cms.audit_log` лежал в `auth.audit_log`.
+
+Сделано:
+- [services/{cms,messenger,email,media}/alembic/env.py](services/) — упрощён: `version_table_schema=settings.db_schema`, в `do_run_migrations` добавлен `connection.execute(text("CREATE SCHEMA IF NOT EXISTS ..."))` внутри `begin_transaction()`. Убрана попытка `SET search_path` (бесполезно под pgbouncer transaction-mode из-за `IGNORE_STARTUP_PARAMETERS=search_path`).
+- [services/messenger/alembic/versions/003_move_to_own_schema.py](services/messenger/alembic/versions/003_move_to_own_schema.py) — новая миграция: `ALTER TABLE auth.{chat_user_replicas, rooms, room_participants, messages, chat_attachments, user_keys} SET SCHEMA messenger` через `DO $$ BEGIN IF EXISTS ... END $$` (idempotent).
+- [services/email/alembic/versions/003_move_to_own_schema.py](services/email/alembic/versions/003_move_to_own_schema.py) — аналогично для `oauth_tokens, email_messages, email_attachments, recipient_statuses` → `email`.
+- [services/cms/alembic/versions/002_audit_log_schema.py](services/cms/alembic/versions/002_audit_log_schema.py) — расширен: переносит данные не только из `public.audit_log`, но и из `auth.audit_log` (плюс DROP TABLE источников после переноса).
+- Прямой SQL применён к живой БД: `ALTER TABLE` 11 таблиц + 4 `alembic_version_*` table moves + DROP `auth.audit_log` после миграции данных.
+- `ALTER ROLE htqweb SET search_path = auth, messenger, email, cms, media, public` — сужен до фактически используемых схем (раньше был с hr,tasks).
+- Обновлён `connect_args.server_settings.search_path` в каждом сервисе — игнорируется pgbouncer-ом, но остаётся как fallback при прямом подключении.
+
+**Известное ограничение:** под pgbouncer (transaction pooling) `SET search_path` через asyncpg startup-param не доходит до бэкенда — поэтому единственный надёжный способ управлять схемами это `ALTER ROLE` + явный `schema=` в `op.create_table`. Все наши миграции уже используют explicit schema, так что новые установки сразу будут корректные.
+
+**Verification (после Phase 4.7):**
+```
+auth      | 2 (alembic_version, users)
+cms       | 4 (news, contact_requests, audit_log, alembic_version_cms)
+email     | 5 (4 domain + alembic_version_email)
+media     | 3 (file_metadata, audit_log, alembic_version_media)
+messenger | 7 (6 domain + alembic_version_messenger)
+```
+
+Версии alembic после стабилизации: cms=`0002_cms_audit_schema`, messenger=`003`, email=`003`, media=`0002_audit_log`. Login + profile flow проверен — admin/admin123 → 200 + полный ProfileResponse с `roles, firstName, fio, avatarUrl, settings`.
+
+**Phase 4.8 — Django removal**
+
+Сделано:
+- `git tag -a v1.0-django-final fc722e4` — точка возврата (последний коммит, где Django был live).
+- Перенесены физические файлы `backend/media/*` в media-volume через `docker cp ...→ /app/media/` (5 поддиректорий: avatars, chat_attachments, department_files, hr/documents, internal_emails, news_images — суммарно ~1.7M dev-загрузок).
+- `git mv backend/webtransport webtransport` (теперь top-level, как в плане).
+- [docker-compose.yml](docker-compose.yml): `webtransport.build.context: ./backend/webtransport` → `./webtransport`.
+- `git rm -r backend/` — удалены HTQWeb/, hr/, internal_email/, mainView/, media_manager/, messenger/, tasks/, manage.py, requirements.txt, entrypoint.sh, Dockerfile, scripts/dev/.
+- [.gitignore](.gitignore): убраны `/backend/staticfiles/`, `/backend/media/`, `backend/webtransport/certs/` (заменено на `webtransport/certs/`).
+- [.dockerignore](.dockerignore): убран `backend/staticfiles`.
+- [README.md](README.md): обновлено дерево проекта — теперь без Django, с полным списком 8 микросервисов.
+- DB cleanup не нужен — Django bookkeeping таблиц (`django_migrations, auth_user, mainView_*` и т.д.) в БД нет (fresh dev).
+
+**Tag после коммита:** `v1.0-fastapi-initial` — первый момент когда Django физически отсутствует.
+
+**Rollback (если что-то сломается):**
+```bash
+git checkout v1.0-django-final
+docker compose up -d --build  # backend Django поднимется обратно
+```
+
+**Что осталось pending:** 5.1 (messenger Socket.IO handlers), 5.2 (user-replica sync), 5.3 (HMR), 5.4 (observability smoke), 6.1-6.3 (тесты, статанализ, deps), 7.1-7.4 (E2E, HTTPS, runbook, финальный tag).
+
+**Commit:** `(this commit)`.
 
 ---
 

@@ -1,5 +1,0 @@
-Трудовой договор
-Кандидат: Auto Candidate
-Email: autodoc_test@example.com
-Вакансия: QA AutoDoc Vacancy
-Дата приёма: 2026-02-16

@@ -711,7 +711,7 @@ services:
   # of the SFU. Off in dev along with SFU.
   webtransport:
     build:
-      context: ./backend/webtransport
+      context: ./webtransport
       dockerfile: Dockerfile
     profiles:
       - production

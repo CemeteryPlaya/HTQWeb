@@ -20,7 +20,6 @@ node_modules
 # ── Build artifacts ──
 frontend/dist
 sfu/dist
-backend/staticfiles
 
 # ── Database ──
 *.sqlite3

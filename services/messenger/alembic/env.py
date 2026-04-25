@@ -5,7 +5,7 @@ import logging
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.settings import settings
@@ -83,11 +83,17 @@ def do_run_migrations(connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         version_table=VERSION_TABLE,
+        version_table_schema=settings.db_schema,
         include_object=include_object,
         include_schemas=True,
     )
 
     with context.begin_transaction():
+        # Ensure the schema exists before any CREATE TABLE runs. All migrations
+        # use explicit `schema=` in op.create_table so we don't need to touch
+        # search_path (which would be a no-op under pgbouncer transaction mode
+        # anyway: IGNORE_STARTUP_PARAMETERS eats SET search_path).
+        connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {settings.db_schema}"))
         context.run_migrations()
 
 

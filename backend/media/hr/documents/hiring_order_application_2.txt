@@ -1,5 +1,0 @@
-Приказ о приёме
-Кандидат: Auto Candidate
-Email: autodoc_test@example.com
-Вакансия: QA AutoDoc Vacancy
-Дата приказа: 2026-02-16

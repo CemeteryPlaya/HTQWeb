@@ -16,10 +16,8 @@ venv/
 env/
 ENV/
 
-# Django
+# SQLite (legacy Django dev DB — retained as a guard against re-introducing it)
 *.sqlite3
-/backend/staticfiles/
-/backend/media/
 
 # ─── Environment / Secrets ───────────────────────────────────────────────────
 # Keep .env.example (template), ignore actual .env files with real secrets
@@ -32,7 +30,7 @@ ENV/
 # ─── TLS Certificates ────────────────────────────────────────────────────────
 # Local-dev TLS material — never commit private keys
 infra/certs/
-backend/webtransport/certs/
+webtransport/certs/
 
 # ─── Local tools cache ───────────────────────────────────────────────────────
 # Per-machine binaries (ngrok, bore, etc.) — install via PATH instead
