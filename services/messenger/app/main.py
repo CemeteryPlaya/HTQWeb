@@ -5,6 +5,7 @@ Handles chat, rooms, E2EE keys, and real-time Socket.IO communication.
 """
 
 
+import asyncio
 from contextlib import asynccontextmanager
 
 
@@ -14,6 +15,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.core.settings import settings
 from app.core.logging import configure_logging, get_logger
 from app.api.socket import sio_app
+from app.workers.replica_sync import run_user_replica_sync_loop
 
 log = get_logger(__name__)
 
@@ -22,8 +24,17 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
     log.info("service_startup", extra={"service": settings.service_name, "port": settings.service_port})
-    yield
-    log.info("service_shutdown", extra={"service": settings.service_name})
+    # Subscribe to user-service pub/sub so ChatUserReplica stays in sync.
+    replica_task = asyncio.create_task(run_user_replica_sync_loop())
+    try:
+        yield
+    finally:
+        replica_task.cancel()
+        try:
+            await replica_task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        log.info("service_shutdown", extra={"service": settings.service_name})
 
 
 def create_app() -> FastAPI:

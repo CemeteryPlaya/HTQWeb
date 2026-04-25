@@ -20,7 +20,7 @@ class TaskComment(BaseModel):
         Integer, ForeignKey("tasks.id", ondelete="CASCADE"), index=True
     )
     author_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL")
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL")
     )
     body: Mapped[str] = mapped_column(Text, nullable=False)
 

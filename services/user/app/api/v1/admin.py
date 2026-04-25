@@ -14,6 +14,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.db import get_db_session
 from app.models.user import User, UserStatus
+from app.workers.actors import user_deactivated, user_upserted
+
+
+def _replica_payload(user: User) -> dict:
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "display_name": user.display_name or "",
+        "avatar_url": user.avatar_url,
+        "status": user.status.value if hasattr(user.status, "value") else str(user.status),
+        "is_active": user.status == UserStatus.ACTIVE,
+    }
 
 
 router = APIRouter(prefix="/api/users/v1/admin/users", tags=["admin-users"])
@@ -111,6 +126,11 @@ async def update_user(
 
     await db.commit()
     await db.refresh(user)
+
+    if user.status == UserStatus.ACTIVE:
+        user_upserted.send(_replica_payload(user))
+    else:
+        user_deactivated.send({"id": user.id})
 
     return AdminUserResponse(
         id=user.id,

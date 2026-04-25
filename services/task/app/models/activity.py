@@ -20,7 +20,7 @@ class TaskActivity(BaseModel):
         Integer, ForeignKey("tasks.id", ondelete="CASCADE"), index=True
     )
     actor_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL")
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL")
     )
     field_name: Mapped[str] = mapped_column(String(50), nullable=False)
     old_value: Mapped[str | None] = mapped_column(Text, nullable=True)

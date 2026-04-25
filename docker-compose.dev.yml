@@ -35,6 +35,7 @@ services:
       - /app/node_modules
     environment:
       VITE_DEV_HTTPS: "false"
+      VITE_DISABLE_HMR: "false"
       VITE_USER_SERVICE_TARGET: "http://user-service:8005"
       VITE_HR_SERVICE_TARGET: "http://hr-service:8006"
       VITE_TASKS_SERVICE_TARGET: "http://task-service:8007"

@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -12,6 +13,7 @@ from app.db import engine
 from app.core.health import router as health_router
 from app.middleware import RequestIDMiddleware
 from app.workers import actors as _actors  # noqa: F401  ensures broker is configured
+from app.workers.replica_sync import run_user_replica_sync_loop
 
 # Configure structured logging
 logging.basicConfig(
@@ -25,10 +27,17 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info("Task service starting up...")
-    # TODO: Run DB migrations on startup
-    # TODO: Initialize Redis connection
-    yield
-    logger.info("Task service shutting down...")
+    # Subscribe to user-service pub/sub so the local users replica stays current.
+    replica_task = asyncio.create_task(run_user_replica_sync_loop())
+    try:
+        yield
+    finally:
+        replica_task.cancel()
+        try:
+            await replica_task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        logger.info("Task service shutting down...")
 
 
 def create_app() -> FastAPI:

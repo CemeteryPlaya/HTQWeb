@@ -109,13 +109,13 @@ class Task(BaseModel):
 
     # Assignments
     reporter_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL"), index=True
     )
     assignee_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL"), index=True
     )
     department_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("departments.id", ondelete="SET NULL"), index=True
+        Integer, ForeignKey("task_departments.id", ondelete="SET NULL"), index=True
     )
     version_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("project_versions.id", ondelete="SET NULL"), index=True

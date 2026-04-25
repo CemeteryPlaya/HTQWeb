@@ -17,10 +17,10 @@ class Notification(BaseModel):
     __tablename__ = "notifications"
 
     recipient_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True
+        Integer, ForeignKey("task_users.id", ondelete="CASCADE"), index=True
     )
     actor_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL"), nullable=True
     )
     task_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True

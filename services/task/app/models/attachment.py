@@ -22,7 +22,7 @@ class TaskAttachment(BaseModel):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     uploaded_by_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL")
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL")
     )
 
     # Relationships

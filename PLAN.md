@@ -46,10 +46,10 @@
 | 4.6 Data migration from Django tables | ⏭ skipped | — | fresh dev, нет production-данных |
 | 4.7 Schema cleanup (move stray tables into proper schemas) | ✅ done | `592dab2` (0.1.0) | — |
 | 4.8 Удалить `backend/` (Django) | ✅ done | `592dab2` (0.1.0) | `v1.0-fastapi-initial` |
-| **5.1 Messenger Socket.IO серверная реализация** | ⬜ pending | — | — |
-| **5.2 User-replica sync actors (Dramatiq)** | ⬜ pending | — | — |
-| **5.3 Dev ergonomics (HMR, Vite config sanity)** | ⬜ pending | — | — |
-| **5.4 Observability smoke (Loki+Promtail+Grafana)** | ⬜ pending | — | — |
+| 5.1 Messenger Socket.IO серверная реализация | ✅ done | `b6cee68` (0.1.1) | — |
+| 5.2 User-replica sync actors (Dramatiq + Redis pub/sub) | ✅ done | (this batch) | — |
+| 5.3 Dev ergonomics (HMR, Vite config sanity) | ✅ done | (this batch) | — |
+| 5.4 Observability smoke (Loki+Promtail+Grafana) | ✅ done | (this batch) | — |
 | **6.1 Testing infrastructure + coverage** | ⬜ pending | — | — |
 | **6.2 Static analysis (ruff + mypy + bandit)** | ⬜ pending | — | — |
 | **6.3 Dependency audit** | ⬜ pending | — | — |
@@ -1365,7 +1365,75 @@ _Infra + DB fixes (обнаружены при smoke):_
 
 ---
 
-### 2026-04-25 — 0.1.0 — Phase 4.7 + 4.8: schema cleanup + Django removal
+### 2026-04-25 — 0.1.1 + 0.1.2 — Phase 5: messenger WS + replica sync + dev ergonomics + observability
+
+**Phase 5.1 — Messenger Socket.IO (commit `b6cee68`, 0.1.1)**
+
+Skeleton handlers (all `pass`) replaced with full implementation:
+- `connect`: pulls JWT from `auth.token` / query string / `Authorization` header, validates via shared HS256 secret + issuer, refuses on missing/expired/invalid. Saves user identity into socket session.
+- `disconnect`: structured log only.
+- `join_room {room_id}`: queries `RoomParticipant`, refuses with `{ok:false,error:"not_a_member"}` if user isn't in the room. On success enters socket.io room `room:<id>`.
+- `leave_room {room_id}`: leaves the namespace.
+- `typing {room_id, is_typing}`: broadcasts `user_typing` event to other participants only (skip_sid).
+- `mark_read {room_id, message_id}`: persists `RoomParticipant.last_read_message_id` + emits `message_read` payload `{room_id, message_id, reader_user_id}`.
+
+REST `messenger_service.py` aligned to frontend's expected names: `new_message`→`message_new` (with `{room_id, message:{...}}` envelope), `typing`→`user_typing`, `message_read` payload now `{room_id, message_id, reader_user_id}`. Room target for emit is `room:<id>` to match join_room.
+
+ASGI mount fix: Starlette's `Mount` sets `root_path` but doesn't rewrite `scope["path"]`, while engineio's ASGIApp matches against the raw path — so a sub-path mount with relative `socketio_path` silently 404s. Solution: mount sio_app at FastAPI root with `socketio_path="/ws/messenger/socket.io"` (full prefix baked in), placed AFTER all REST routers.
+
+TokenPayload schema in messenger + email refreshed: dropped required `sub` (user-service JWTs don't emit it), accepts the full HS256 claim set with sensible defaults.
+
+**Verification:**
+- `connect` without token → `connect_error: missing_token`.
+- Valid admin JWT → `CONNECTED`, `join_room(room=999)` → `{ok:false, error:'not_a_member'}` (admin isn't a participant).
+- `GET /api/messenger/v1/rooms/` still 200 (mount doesn't shadow REST).
+
+---
+
+**Phase 5.2 — User-replica sync (Redis pub/sub)**
+
+User-service now publishes lifecycle events to Redis:
+- [services/user/app/workers/actors.py](services/user/app/workers/actors.py): new actors `user_upserted` (publishes to `user.upserted`), `user_deactivated` (`user.deactivated`), and `rebuild_user_replicas` (one-shot bootstrap that re-publishes every user).
+- Wired from [registration.py](services/user/app/api/v1/registration.py) `approve` (→ upserted) and `reject` (→ deactivated), plus [admin.py](services/user/app/api/v1/admin.py) `update_user` (upserted if status=ACTIVE, otherwise deactivated).
+
+Subscribers (one per service, runs as a background task in the FastAPI lifespan):
+- [services/messenger/app/workers/replica_sync.py](services/messenger/app/workers/replica_sync.py): upsert/deactivate `messenger.chat_user_replicas`.
+- [services/task/app/workers/replica_sync.py](services/task/app/workers/replica_sync.py): upsert/deactivate `public.task_users` (renamed from `users` to avoid collision with `auth.users` when search_path falls through).
+
+Side-fix: task replica tables renamed to `task_users` and `task_departments` (plus FK strings in 6 models). New migration [services/task/alembic/versions/002_replica_tables.py](services/task/alembic/versions/002_replica_tables.py) creates them.
+
+**Verification:**
+- `redis-cli PUBLISH user.upserted '...'` → reaches 2 subscribers (messenger + task) → both replica rows materialised.
+- `PATCH /api/users/v1/admin/users/1/` (display_name update) → user-worker logs `user_upserted published id=1 subscribers=2` → both replica_sync loops log `replica_synced channel=user.upserted user_id=1`.
+
+---
+
+**Phase 5.3 — Dev ergonomics**
+
+- [frontend/.env](frontend/.env): `VITE_DEV_HTTPS=false` and `VITE_DISABLE_HMR=false` by default. Dropped dead `VITE_BACKEND_*` vars.
+- [docker-compose.dev.yml](docker-compose.dev.yml): explicit `VITE_DISABLE_HMR=false` override so the dev Vite container hot-reloads source changes without manual refresh.
+
+---
+
+**Phase 5.4 — Observability smoke**
+
+End-to-end check that the Loki/Promtail/Grafana stack added in `0.0.2.3` actually works:
+- `GET http://localhost:3100/ready` → 200 ready.
+- `GET http://localhost:3100/loki/api/v1/label/service/values` → 23 services seen (all 8 microservices + workers/schedulers + db/redis/pgbouncer + frontend/loki/promtail/grafana/certbot).
+- Loki `query_range {service="user-service"}` returns last-5-min logs.
+- Grafana `GET /api/health` → 200, `database: ok`.
+- Datasource Loki provisioned at `http://loki:3100`.
+- Dashboard `htqweb-overview` provisioned with 3 panels: Error rate per service, Recent errors, Log rate per service.
+
+No alert rules created yet (deferred to Phase 7.3 runbook). Loki retention is the default (no compaction policy configured).
+
+---
+
+**Commit:** `(this batch)` after PLAN.md update.
+
+---
+
+
 
 **Контекст:** ответ пользователя «fresh dev — данных нет» позволил пропустить Phase 4.6 (data migration). Чистая cutover-операция: разложить таблицы по своим схемам и физически удалить Django.
 

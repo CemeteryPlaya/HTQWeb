@@ -38,7 +38,7 @@ class TaskLink(BaseModel):
         PG_ENUM(LinkType, create_type=False), nullable=False
     )
     created_by_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL")
+        Integer, ForeignKey("task_users.id", ondelete="SET NULL")
     )
 
     # Relationships

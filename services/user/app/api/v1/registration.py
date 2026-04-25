@@ -16,6 +16,26 @@ from app.auth.dependencies import get_current_user
 from app.db import get_db_session
 from app.models.user import User, UserStatus
 from app.services.auth_service import hash_password
+from app.workers.actors import user_deactivated, user_upserted
+
+
+def _replica_payload(user: User) -> dict:
+    """Shape used for `user.upserted` Redis events.
+
+    Mirrors columns expected by ChatUserReplica + task.users replicas. Keep in
+    sync with services/<svc>/app/workers/replica_sync.py when adding fields.
+    """
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name or "",
+        "last_name": user.last_name or "",
+        "display_name": user.display_name or "",
+        "avatar_url": user.avatar_url,
+        "status": user.status.value if hasattr(user.status, "value") else str(user.status),
+        "is_active": user.status == UserStatus.ACTIVE,
+    }
 
 
 log = structlog.get_logger(__name__)
@@ -158,6 +178,9 @@ async def approve_registration(
 
     user.status = UserStatus.ACTIVE
     await db.commit()
+    await db.refresh(user)
+
+    user_upserted.send(_replica_payload(user))
 
     log.info(
         "user_approved",
@@ -197,6 +220,8 @@ async def reject_registration(
 
     user.status = UserStatus.REJECTED
     await db.commit()
+
+    user_deactivated.send({"id": user.id})
 
     log.info(
         "user_rejected",
