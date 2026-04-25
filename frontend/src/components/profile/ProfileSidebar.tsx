@@ -13,27 +13,25 @@ type Props = {
     position?: string;
 };
 
-const isEditor = (roles?: string[]) => {
-    if (!roles) return false;
-    return roles.includes('editors') || roles.includes('staff');
-}
+// Role buckets — mirror values returned by user-service
+// (services/user/app/api/v1/profile.py:_roles_for): "admin" for is_superuser,
+// "staff" for is_staff-only, "user" otherwise. HR-specific roles like
+// "hr_manager" are reserved for future per-domain ACLs; admins see everything.
 
-const isHRManager = (roles?: string[]) => {
-    if (!roles) return false;
-    return (
-        roles.includes('hr_manager')
-        || roles.includes('senior_hr')
-        || roles.includes('junior_hr')
-        || roles.includes('senior_manager')
-        || roles.includes('junior_manager')
-        || roles.includes('staff')
-    );
-}
+const ADMIN_ROLES = ['admin', 'superuser'];
+const STAFF_OR_ADMIN_ROLES = [...ADMIN_ROLES, 'staff'];
+const HR_ROLES = [
+    ...STAFF_OR_ADMIN_ROLES,
+    'hr_manager', 'senior_hr', 'junior_hr', 'senior_manager', 'junior_manager',
+];
+const EDITOR_ROLES = [...STAFF_OR_ADMIN_ROLES, 'editors'];
 
-const isAdmin = (roles?: string[]) => {
-    if (!roles) return false;
-    return roles.includes('staff');
-}
+const hasAnyRole = (roles?: string[], expected: string[] = []) =>
+    Boolean(roles?.some(r => expected.includes(r)));
+
+const isEditor = (roles?: string[]) => hasAnyRole(roles, EDITOR_ROLES);
+const isHRManager = (roles?: string[]) => hasAnyRole(roles, HR_ROLES);
+const isAdmin = (roles?: string[]) => hasAnyRole(roles, ADMIN_ROLES);
 
 export const ProfileSidebar: React.FC<Props> = ({ roles, department, position }) => {
     const { t } = useTranslation();
@@ -145,7 +143,9 @@ export const ProfileSidebar: React.FC<Props> = ({ roles, department, position })
                     <h4 className="font-semibold mb-3">{t('profile.sidebar.adminTools')}</h4>
                     <ul className="space-y-2 text-sm">
                         <li>
-                            <a href="/admin/" className="text-primary hover:underline">{t('profile.sidebar.djangoAdmin')}</a>
+                            <Link to="/admin/users" className="text-primary hover:underline flex items-center gap-1.5">
+                                👥 Управление пользователями
+                            </Link>
                         </li>
                         <li>
                             <Link to="/admin/registrations" className="text-primary hover:underline flex items-center">
@@ -155,8 +155,13 @@ export const ProfileSidebar: React.FC<Props> = ({ roles, department, position })
                         </li>
                         <li>
                             <Link to="/admin/chats" className="text-primary hover:underline flex items-center gap-1.5">
-                                Управление чатами
+                                💬 Управление чатами
                             </Link>
+                        </li>
+                        <li>
+                            <a href="/sqladmin/" className="text-primary hover:underline flex items-center gap-1.5">
+                                🗄️ База данных (sqladmin)
+                            </a>
                         </li>
                     </ul>
                 </div>
