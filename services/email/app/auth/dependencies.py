@@ -14,10 +14,18 @@ security = HTTPBearer(auto_error=False)
 
 
 class TokenPayload(BaseModel):
-    sub: str
+    """JWT claims from user-service. See services/user/app/services/auth_service.py."""
+
     user_id: int
-    is_admin: bool
+    username: str | None = None
+    email: str | None = None
+    is_staff: bool = False
+    is_superuser: bool = False
+    is_admin: bool = False
+    token_type: str = "access"
     exp: int
+    iat: int | None = None
+    iss: str | None = None
 
 
 def get_optional_user(

@@ -63,18 +63,24 @@ class MessengerService:
         )
         full_msg = result.scalar_one()
 
-        # 5. Broadcast to room via Socket.IO
-        # Room name in socket.io can be just the string of room_id
+        # 5. Broadcast to room via Socket.IO. Frontend listens for `message_new`
+        # and `message_read` (see frontend/src/features/messenger/hooks/
+        # useMessengerSocket.ts). Room name is `room:<id>` to namespace from
+        # other socket.io rooms.
         await sio.emit(
-            "new_message",
+            "message_new",
             {
-                "id": str(full_msg.id),
                 "room_id": full_msg.room_id,
-                "sender_id": full_msg.sender_id,
-                "content": full_msg.content,
-                "created_at": full_msg.created_at.isoformat() if full_msg.created_at else None,
+                "message": {
+                    "id": str(full_msg.id),
+                    "room_id": full_msg.room_id,
+                    "sender_id": full_msg.sender_id,
+                    "content": full_msg.content,
+                    "is_encrypted": full_msg.is_encrypted,
+                    "created_at": full_msg.created_at.isoformat() if full_msg.created_at else None,
+                },
             },
-            room=str(data.room_id),
+            room=f"room:{data.room_id}",
         )
 
         return full_msg
@@ -88,17 +94,21 @@ class MessengerService:
         rp.last_read_message_id = message_id
         await self.session.commit()
 
-        # Broadcast read receipt
+        # Broadcast read receipt to other participants.
         await sio.emit(
             "message_read",
-            {"room_id": room_id, "user_id": user_id, "message_id": str(message_id)},
-            room=str(room_id),
+            {
+                "room_id": room_id,
+                "message_id": str(message_id),
+                "reader_user_id": user_id,
+            },
+            room=f"room:{room_id}",
         )
 
-    async def publish_typing(self, room_id: int, user_id: int) -> None:
-        """Publish typing indicator."""
+    async def publish_typing(self, room_id: int, user_id: int, is_typing: bool = True) -> None:
+        """Publish typing indicator to other participants."""
         await sio.emit(
-            "typing",
-            {"room_id": room_id, "user_id": user_id},
-            room=str(room_id),
+            "user_typing",
+            {"room_id": room_id, "user_id": user_id, "is_typing": is_typing},
+            room=f"room:{room_id}",
         )

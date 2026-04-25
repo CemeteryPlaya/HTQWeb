@@ -53,9 +53,6 @@ def create_app() -> FastAPI:
     async def health_check():
         return {"status": "ok", "service": "messenger"}
 
-    # Mount Socket.IO app
-    app.mount("/ws", sio_app)
-
     # API v1 routers
     from app.api.v1 import rooms as rooms_router
     from app.api.v1 import messages as messages_router
@@ -64,7 +61,7 @@ def create_app() -> FastAPI:
     from app.api.v1 import read as read_router
     from app.api.v1 import attachments as attachments_router
     from app.api.v1 import admin as admin_router
-    
+
     app.include_router(rooms_router.router, prefix="/api/messenger/v1/rooms")
     app.include_router(messages_router.router, prefix="/api/messenger/v1/messages")
     app.include_router(keys_router.router, prefix="/api/messenger/v1/keys")
@@ -77,6 +74,13 @@ def create_app() -> FastAPI:
     from app.admin import create_admin
     from app.db import engine
     create_admin(app, engine)
+
+    # Socket.IO is mounted last (after all REST routes) so the root `/` mount
+    # acts as a fallthrough for engineio traffic only. socketio_path already
+    # contains the full `/ws/messenger/socket.io` prefix because Starlette's
+    # Mount sets `root_path` but doesn't rewrite `scope["path"]`, while
+    # engineio's ASGIApp matches against the raw `scope["path"]`.
+    app.mount("/", sio_app)
 
     return app
 
