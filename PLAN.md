@@ -47,9 +47,9 @@
 | 4.7 Schema cleanup (move stray tables into proper schemas) | ✅ done | `592dab2` (0.1.0) | — |
 | 4.8 Удалить `backend/` (Django) | ✅ done | `592dab2` (0.1.0) | `v1.0-fastapi-initial` |
 | 5.1 Messenger Socket.IO серверная реализация | ✅ done | `b6cee68` (0.1.1) | — |
-| 5.2 User-replica sync actors (Dramatiq + Redis pub/sub) | ✅ done | (this batch) | — |
-| 5.3 Dev ergonomics (HMR, Vite config sanity) | ✅ done | (this batch) | — |
-| 5.4 Observability smoke (Loki+Promtail+Grafana) | ✅ done | (this batch) | — |
+| 5.2 User-replica sync actors (Dramatiq + Redis pub/sub) | ✅ done | `e5a1768` (0.1.2) | — |
+| 5.3 Dev ergonomics (HMR, Vite config sanity) | ✅ done | `e5a1768` (0.1.2) | — |
+| 5.4 Observability smoke (Loki+Promtail+Grafana) | ✅ done | `e5a1768` (0.1.2) | — |
 | **6.1 Testing infrastructure + coverage** | ⬜ pending | — | — |
 | **6.2 Static analysis (ruff + mypy + bandit)** | ⬜ pending | — | — |
 | **6.3 Dependency audit** | ⬜ pending | — | — |
@@ -1429,7 +1429,7 @@ No alert rules created yet (deferred to Phase 7.3 runbook). Loki retention is th
 
 ---
 
-**Commit:** `(this batch)` after PLAN.md update.
+**Commit:** `e5a1768` (0.1.2) after PLAN.md update.
 
 ---
 
