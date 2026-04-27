@@ -125,8 +125,35 @@ function extractServerErrorMessage(
   return fallback;
 }
 
+/**
+ * Если ответ — пагинированный envelope `{items, total, page, pages, limit}`,
+ * раскрываем его в `items`. Backend hr-service возвращает этот shape для
+ * employees / positions / vacancies / applications / documents / time, а
+ * фронтенд везде ожидает плоский массив. Никакая страница не использует
+ * `total`/`pages` (проверено grep-сweep), так что unwrap безопасен.
+ */
+function unwrapPaginatedEnvelope(data: unknown): unknown {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+  const d = data as Record<string, unknown>;
+  if (
+    Array.isArray(d.items) &&
+    typeof d.total === 'number' &&
+    typeof d.page === 'number' &&
+    typeof d.pages === 'number'
+  ) {
+    return d.items;
+  }
+  return data;
+}
+
+
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response?.data !== undefined) {
+      response.data = unwrapPaginatedEnvelope(response.data);
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as AxiosRequestConfig & {
       _retry401?: boolean;
