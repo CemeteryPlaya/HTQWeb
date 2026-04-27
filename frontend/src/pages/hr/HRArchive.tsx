@@ -21,7 +21,7 @@ const HRArchive = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['hr-archive'],
     queryFn: async () => {
-      const res = await api.get<HRArchiveResponse>('hr/applications/archive/');
+      const res = await api.get<HRArchiveResponse>('hr/v1/applications/archive/');
       return res.data;
     },
   });
@@ -79,7 +79,7 @@ const HRArchive = () => {
     // Загрузить поля PDF если документ привязан к заявке
     if (doc.application && (doc.doc_type === 'contract' || doc.doc_type === 'order')) {
       setPdfFieldsLoading(true);
-      api.get(`hr/documents/${doc.id}/pdf-fields/`).then((res) => {
+      api.get(`hr/v1/documents/${doc.id}/pdf-fields/`).then((res) => {
         setPdfFields(res.data);
       }).catch(() => { }).finally(() => setPdfFieldsLoading(false));
     }
@@ -94,7 +94,7 @@ const HRArchive = () => {
       formData.append('doc_type', editForm.doc_type);
       formData.append('description', editForm.description || '');
       if (editForm.file) formData.append('file', editForm.file);
-      const res = await api.put(`hr/documents/${editingDoc.id}/`, formData, {
+      const res = await api.put(`hr/v1/documents/${editingDoc.id}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data;
@@ -109,7 +109,7 @@ const HRArchive = () => {
 
   const regenerateMutation = useMutation({
     mutationFn: async (args: { docId: number; fields: typeof pdfFields }) => {
-      const res = await api.post(`hr/documents/${args.docId}/regenerate/`, args.fields);
+      const res = await api.post(`hr/v1/documents/${args.docId}/regenerate/`, args.fields);
       return res.data;
     },
     onSuccess: () => {

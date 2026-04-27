@@ -66,7 +66,7 @@ const HREmployees = () => {
   const { data: employees, isLoading, error } = useQuery({
     queryKey: ['hr-employees'],
     queryFn: async () => {
-      const res = await api.get<Employee[]>('hr/employees/');
+      const res = await api.get<Employee[]>('hr/v1/employees/');
       return res.data;
     },
   });
@@ -74,7 +74,7 @@ const HREmployees = () => {
   const { data: departments } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return res.data;
     },
   });
@@ -82,7 +82,7 @@ const HREmployees = () => {
   const { data: positions } = useQuery({
     queryKey: ['hr-positions'],
     queryFn: async () => {
-      const res = await api.get<Position[]>('hr/positions/');
+      const res = await api.get<Position[]>('hr/v1/positions/');
       return res.data;
     },
   });
@@ -90,7 +90,7 @@ const HREmployees = () => {
   const { data: users } = useQuery({
     queryKey: ['hr-employee-users'],
     queryFn: async () => {
-      const res = await api.get<HRUser[]>('hr/employees/users/');
+      const res = await api.get<HRUser[]>('hr/v1/employees/users/');
       return res.data;
     },
   });
@@ -145,10 +145,10 @@ const HREmployees = () => {
         if (!payload.user) {
           delete payload.user;
         }
-        const res = await api.put(`hr/employees/${editing.id}/`, payload);
+        const res = await api.put(`hr/v1/employees/${editing.id}/`, payload);
         return res.data;
       }
-      const res = await api.post('hr/employees/', payload);
+      const res = await api.post('hr/v1/employees/', payload);
       return res.data;
     },
     onSuccess: () => {
@@ -167,7 +167,7 @@ const HREmployees = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`hr/employees/${id}/`);
+      await api.delete(`hr/v1/employees/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-employees'] });
@@ -181,7 +181,7 @@ const HREmployees = () => {
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof newUserForm) => {
-      const res = await api.post<HRUser>('hr/employees/users/', data);
+      const res = await api.post<HRUser>('hr/v1/employees/users/', data);
       return res.data;
     },
     onSuccess: (data) => {

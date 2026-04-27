@@ -40,7 +40,7 @@ const HRApplications = () => {
   const { data: applications, isLoading, error } = useQuery({
     queryKey: ['hr-applications'],
     queryFn: async () => {
-      const res = await api.get<Application[]>('hr/applications/');
+      const res = await api.get<Application[]>('hr/v1/applications/');
       return res.data;
     },
   });
@@ -48,7 +48,7 @@ const HRApplications = () => {
   const { data: vacancies } = useQuery({
     queryKey: ['hr-vacancies'],
     queryFn: async () => {
-      const res = await api.get<Vacancy[]>('hr/vacancies/');
+      const res = await api.get<Vacancy[]>('hr/v1/vacancies/');
       return res.data;
     },
   });
@@ -79,12 +79,12 @@ const HRApplications = () => {
       if (form.resume) formData.append('resume', form.resume);
 
       if (editing) {
-        const res = await api.patch(`hr/applications/${editing.id}/`, formData, {
+        const res = await api.patch(`hr/v1/applications/${editing.id}/`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         return res.data;
       }
-      const res = await api.post('hr/applications/', formData, {
+      const res = await api.post('hr/v1/applications/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data;
@@ -108,7 +108,7 @@ const HRApplications = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`hr/applications/${id}/`);
+      await api.delete(`hr/v1/applications/${id}/`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-applications'] }),
   });
@@ -163,7 +163,7 @@ const HRApplications = () => {
 
   const stageMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: Application['status'] }) => {
-      const res = await api.patch(`hr/applications/${id}/`, { status });
+      const res = await api.patch(`hr/v1/applications/${id}/`, { status });
       return res.data;
     },
     onSuccess: () => {

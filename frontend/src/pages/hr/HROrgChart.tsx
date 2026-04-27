@@ -19,7 +19,7 @@ const HROrgChart = () => {
   const { data: departments } = useDeptQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return Array.isArray(res.data) ? res.data : (res.data as any).results ?? [];
     },
   });

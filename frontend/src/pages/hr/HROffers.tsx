@@ -24,14 +24,14 @@ const HROffers = () => {
   const { data: applications = [], isLoading, error } = useQuery({
     queryKey: ['hr-offers'],
     queryFn: async () => {
-      const res = await api.get<Application[]>('hr/applications/');
+      const res = await api.get<Application[]>('hr/v1/applications/');
       return res.data;
     },
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: 'hired' | 'rejected' | 'offered' }) => {
-      const res = await api.patch(`hr/applications/${id}/`, { status });
+      const res = await api.patch(`hr/v1/applications/${id}/`, { status });
       return res.data;
     },
     onSuccess: () => {

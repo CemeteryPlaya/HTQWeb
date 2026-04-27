@@ -40,7 +40,7 @@ const HRLogs = () => {
   const { data: logs, isLoading, error } = useQuery({
     queryKey: ['hr-logs'],
     queryFn: async () => {
-      const res = await api.get<ActionLog[]>('hr/logs/');
+      const res = await api.get<ActionLog[]>('hr/v1/logs/');
       return res.data;
     },
   });

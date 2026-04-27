@@ -44,7 +44,7 @@ const HRDepartments = () => {
   const { data: departments, isLoading, error } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return res.data;
     },
   });
@@ -69,15 +69,15 @@ const HRDepartments = () => {
   const saveDeptMutation = useMutation({
     mutationFn: async () => {
       if (editingDept) {
-        return (await api.put(`hr/departments/${editingDept.id}/`, deptForm)).data;
+        return (await api.put(`hr/v1/departments/${editingDept.id}/`, deptForm)).data;
       }
-      return (await api.post('hr/departments/', deptForm)).data;
+      return (await api.post('hr/v1/departments/', deptForm)).data;
     },
     onSuccess: () => { invalidate(); closeDeptDialog(); },
   });
 
   const deleteDeptMutation = useMutation({
-    mutationFn: async (id: number) => { await api.delete(`hr/departments/${id}/`); },
+    mutationFn: async (id: number) => { await api.delete(`hr/v1/departments/${id}/`); },
     onSuccess: invalidate,
   });
 
@@ -85,15 +85,15 @@ const HRDepartments = () => {
     mutationFn: async () => {
       const payload = { title: posForm.title, department: posForm.department };
       if (editingPos) {
-        return (await api.put(`hr/positions/${editingPos.id}/`, payload)).data;
+        return (await api.put(`hr/v1/positions/${editingPos.id}/`, payload)).data;
       }
-      return (await api.post('hr/positions/', payload)).data;
+      return (await api.post('hr/v1/positions/', payload)).data;
     },
     onSuccess: () => { invalidate(); closePosDialog(); },
   });
 
   const deletePosMutation = useMutation({
-    mutationFn: async (id: number) => { await api.delete(`hr/positions/${id}/`); },
+    mutationFn: async (id: number) => { await api.delete(`hr/v1/positions/${id}/`); },
     onSuccess: invalidate,
   });
 

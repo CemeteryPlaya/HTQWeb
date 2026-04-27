@@ -17,7 +17,7 @@ export function useHRLevel() {
   const { data, isLoading } = useQuery<HRLevelResponse>({
     queryKey: ['hr-level'],
     queryFn: async () => {
-      const res = await api.get<HRLevelResponse>('hr/employees/hr-level/');
+      const res = await api.get<HRLevelResponse>('hr/v1/employees/hr-level/');
       return res.data;
     },
     staleTime: 5 * 60 * 1000, // cache for 5 min

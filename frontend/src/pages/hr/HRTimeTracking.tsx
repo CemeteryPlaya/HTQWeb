@@ -37,7 +37,7 @@ const HRTimeTracking = () => {
   const { data: records, isLoading, error } = useQuery({
     queryKey: ['hr-timetracking'],
     queryFn: async () => {
-      const res = await api.get<TimeRecord[]>('hr/time-tracking/');
+      const res = await api.get<TimeRecord[]>('hr/v1/time-tracking/');
       return res.data;
     },
   });
@@ -45,7 +45,7 @@ const HRTimeTracking = () => {
   const { data: employees } = useQuery({
     queryKey: ['hr-employees'],
     queryFn: async () => {
-      const res = await api.get<EmployeeOption[]>('hr/employees/');
+      const res = await api.get<EmployeeOption[]>('hr/v1/employees/');
       return res.data;
     },
   });
@@ -72,10 +72,10 @@ const HRTimeTracking = () => {
         comment: form.comment || '',
       } as any;
       if (editing) {
-        const res = await api.put(`hr/time-tracking/${editing.id}/`, payload);
+        const res = await api.put(`hr/v1/time-tracking/${editing.id}/`, payload);
         return res.data;
       }
-      const res = await api.post('hr/time-tracking/', payload);
+      const res = await api.post('hr/v1/time-tracking/', payload);
       return res.data;
     },
     onSuccess: () => {
@@ -95,14 +95,14 @@ const HRTimeTracking = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`hr/time-tracking/${id}/`);
+      await api.delete(`hr/v1/time-tracking/${id}/`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-timetracking'] }),
   });
 
   const approveMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await api.post(`hr/time-tracking/${id}/approve/`);
+      const res = await api.post(`hr/v1/time-tracking/${id}/approve/`);
       return res.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-timetracking'] }),
@@ -110,7 +110,7 @@ const HRTimeTracking = () => {
 
   const rejectMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await api.post(`hr/time-tracking/${id}/reject/`);
+      const res = await api.post(`hr/v1/time-tracking/${id}/reject/`);
       return res.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-timetracking'] }),

@@ -133,7 +133,7 @@ const HRPositions = () => {
   const { data: departments } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return res.data;
     },
   });

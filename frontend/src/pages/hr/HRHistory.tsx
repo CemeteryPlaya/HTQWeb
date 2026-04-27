@@ -67,7 +67,7 @@ const HRHistory = () => {
   const { data: records, isLoading, error } = useQuery({
     queryKey: ['hr-personnel-history'],
     queryFn: async () => {
-      const res = await api.get<HistoryRecord[]>('hr/personnel-history/');
+      const res = await api.get<HistoryRecord[]>('hr/v1/personnel-history/');
       return res.data;
     },
   });
@@ -75,7 +75,7 @@ const HRHistory = () => {
   const { data: employees } = useQuery({
     queryKey: ['hr-employees'],
     queryFn: async () => {
-      const res = await api.get<EmployeeOption[]>('hr/employees/');
+      const res = await api.get<EmployeeOption[]>('hr/v1/employees/');
       return res.data;
     },
   });
@@ -83,7 +83,7 @@ const HRHistory = () => {
   const { data: departments } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return res.data;
     },
   });
@@ -91,7 +91,7 @@ const HRHistory = () => {
   const { data: positions } = useQuery({
     queryKey: ['hr-positions'],
     queryFn: async () => {
-      const res = await api.get<Position[]>('hr/positions/');
+      const res = await api.get<Position[]>('hr/v1/positions/');
       return res.data;
     },
   });
@@ -126,9 +126,9 @@ const HRHistory = () => {
         comment: form.comment,
       };
       if (editing) {
-        return (await api.put(`hr/personnel-history/${editing.id}/`, payload)).data;
+        return (await api.put(`hr/v1/personnel-history/${editing.id}/`, payload)).data;
       }
-      return (await api.post('hr/personnel-history/', payload)).data;
+      return (await api.post('hr/v1/personnel-history/', payload)).data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-personnel-history'] });
@@ -137,7 +137,7 @@ const HRHistory = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`hr/personnel-history/${id}/`),
+    mutationFn: (id: number) => api.delete(`hr/v1/personnel-history/${id}/`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-personnel-history'] }),
   });
 

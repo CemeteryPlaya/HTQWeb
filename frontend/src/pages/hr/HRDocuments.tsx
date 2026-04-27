@@ -36,7 +36,7 @@ const HRDocuments = () => {
   const { data: documents, isLoading, error } = useQuery({
     queryKey: ['hr-documents'],
     queryFn: async () => {
-      const res = await api.get<Document[]>('hr/documents/');
+      const res = await api.get<Document[]>('hr/v1/documents/');
       return res.data;
     },
   });
@@ -44,7 +44,7 @@ const HRDocuments = () => {
   const { data: employees } = useQuery({
     queryKey: ['hr-employees'],
     queryFn: async () => {
-      const res = await api.get<EmployeeOption[]>('hr/employees/');
+      const res = await api.get<EmployeeOption[]>('hr/v1/employees/');
       return res.data;
     },
   });
@@ -81,12 +81,12 @@ const HRDocuments = () => {
       if (form.file) formData.append('file', form.file);
 
       if (editing) {
-        const res = await api.put(`hr/documents/${editing.id}/`, formData, {
+        const res = await api.put(`hr/v1/documents/${editing.id}/`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         return res.data;
       }
-      const res = await api.post('hr/documents/', formData, {
+      const res = await api.post('hr/v1/documents/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data;
@@ -102,7 +102,7 @@ const HRDocuments = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`hr/documents/${id}/`);
+      await api.delete(`hr/v1/documents/${id}/`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-documents'] });
@@ -112,7 +112,7 @@ const HRDocuments = () => {
 
   const regenerateMutation = useMutation({
     mutationFn: async (args: { docId: number; fields: typeof pdfFields }) => {
-      const res = await api.post(`hr/documents/${args.docId}/regenerate/`, args.fields);
+      const res = await api.post(`hr/v1/documents/${args.docId}/regenerate/`, args.fields);
       return res.data;
     },
     onSuccess: () => {
@@ -142,7 +142,7 @@ const HRDocuments = () => {
     // Загрузить поля PDF если документ привязан к заявке
     if (doc.application && (doc.doc_type === 'contract' || doc.doc_type === 'order')) {
       setPdfFieldsLoading(true);
-      api.get(`hr/documents/${doc.id}/pdf-fields/`).then((res) => {
+      api.get(`hr/v1/documents/${doc.id}/pdf-fields/`).then((res) => {
         setPdfFields(res.data);
       }).catch(() => { }).finally(() => setPdfFieldsLoading(false));
     }

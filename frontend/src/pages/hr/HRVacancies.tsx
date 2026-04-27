@@ -39,7 +39,7 @@ const HRVacancies = () => {
   const { data: vacancies, isLoading, error } = useQuery({
     queryKey: ['hr-vacancies'],
     queryFn: async () => {
-      const res = await api.get<Vacancy[]>('hr/vacancies/');
+      const res = await api.get<Vacancy[]>('hr/v1/vacancies/');
       return res.data;
     },
   });
@@ -47,7 +47,7 @@ const HRVacancies = () => {
   const { data: departments } = useQuery({
     queryKey: ['hr-departments'],
     queryFn: async () => {
-      const res = await api.get<Department[]>('hr/departments/');
+      const res = await api.get<Department[]>('hr/v1/departments/');
       return res.data;
     },
   });
@@ -76,10 +76,10 @@ const HRVacancies = () => {
         status: form.status,
       };
       if (editing) {
-        const res = await api.put(`hr/vacancies/${editing.id}/`, payload);
+        const res = await api.put(`hr/v1/vacancies/${editing.id}/`, payload);
         return res.data;
       }
-      const res = await api.post('hr/vacancies/', payload);
+      const res = await api.post('hr/v1/vacancies/', payload);
       return res.data;
     },
     onSuccess: () => {
@@ -100,7 +100,7 @@ const HRVacancies = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`hr/vacancies/${id}/`);
+      await api.delete(`hr/v1/vacancies/${id}/`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hr-vacancies'] }),
   });

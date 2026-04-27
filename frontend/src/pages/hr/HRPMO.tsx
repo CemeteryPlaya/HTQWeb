@@ -76,7 +76,7 @@ const HRPMO = () => {
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ['hr-employees-list'],
     queryFn: async () => {
-      const res = await api.get('hr/employees/');
+      const res = await api.get('hr/v1/employees/');
       return Array.isArray(res.data) ? res.data : res.data.results ?? [];
     },
   });
