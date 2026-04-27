@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 const panels5 = '/images/panels5.webp';
 const panels6 = '/images/panels6.webp';
 const panels7 = '/images/panels7.webp';
-import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
+import api from '../api/client';
 
 export const NewsSection = () => {
   const { t } = useTranslation();
@@ -35,15 +35,19 @@ export const NewsSection = () => {
     },
   ];
 
-  const fetchNews = async () => {
+  const fetchNews = async (): Promise<APINewsItem[]> => {
     try {
-      // Use relative URL - Vite proxy forwards /api to Django backend
-      const res = await axios.get('/api/news/');
-      return res.data;
-    } catch (err) {
-      // don't throw to avoid breaking the component; return null so fallback is used
-      // console.warn('Failed to fetch news list', err);
-      return null;
+      const res = await api.get<APINewsItem[] | { items?: APINewsItem[] }>(
+        'cms/v1/news/',
+      );
+      // Tolerate either a bare array (current shape) or a paginated envelope.
+      const data = res.data as APINewsItem[] | { items?: APINewsItem[] } | null;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray((data as any).items)) return (data as any).items;
+      return [];
+    } catch {
+      // Fall back to staticNews on any network/auth/parse error.
+      return [];
     }
   };
 
@@ -63,7 +67,10 @@ export const NewsSection = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const news = (apiNews && apiNews.length > 0)
+  // Defensive: only treat the response as a list when it actually is one.
+  // The previous string-of-bytes from a 404 HTML page used to crash here
+  // with "apiNews.map is not a function".
+  const news = Array.isArray(apiNews) && apiNews.length > 0
     ? apiNews.map((n: APINewsItem) => ({
       title: n.title,
       slug: n.slug,

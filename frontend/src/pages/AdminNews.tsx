@@ -12,8 +12,12 @@ import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const fetchNews = async () => {
-  const res = await api.get('news/');
-  return res.data;
+  const res = await api.get('cms/v1/news/');
+  // Tolerate either a plain list or a paginated envelope.
+  const data = res.data as unknown;
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray((data as any).items)) return (data as any).items;
+  return [] as any[];
 };
 
 const AdminNews = () => {
@@ -48,18 +52,32 @@ const AdminNews = () => {
   const save = async () => {
     try {
       setSaving(true);
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('slug', form.slug);
-      formData.append('summary', form.summary || '');
-      formData.append('content', form.content || '');
-      formData.append('published', form.published ? 'true' : 'false');
-      if (form.image) formData.append('image', form.image);
+
+      // Upload the cover image (if any) through media-service first; backend
+      // News.image is a string URL, not a file. Skip silently if no image.
+      let imageUrl: string | undefined = imagePreview && imagePreview.startsWith('/') ? imagePreview : undefined;
+      if (form.image instanceof File) {
+        const fd = new FormData();
+        fd.append('file', form.image);
+        const upload = await api.post<{ url?: string; path?: string }>('media/v1/files/', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        imageUrl = (upload.data as any).url || (upload.data as any).path;
+      }
+
+      const payload: Record<string, unknown> = {
+        title: form.title,
+        slug: form.slug,
+        summary: form.summary || '',
+        content: form.content || '',
+        published: !!form.published,
+      };
+      if (imageUrl) payload.image = imageUrl;
 
       if (editing) {
-        await api.put(`news/${editing.slug}/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.patch(`cms/v1/news/${editing.id}`, payload);
       } else {
-        await api.post('news/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post('cms/v1/news/', payload);
       }
       queryClient.invalidateQueries({ queryKey: ['newsList'] });
       setEditing(null);

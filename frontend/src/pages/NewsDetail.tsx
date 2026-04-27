@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'sonner';
+import api from '@/api/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -35,10 +35,10 @@ const NewsDetail = () => {
     // Reset language state when article changes
     setCurrentLang('ru');
     setTranslations({});
-    axios
-      .get(`/api/news/${slug}/`)
+    api
+      .get(`cms/v1/news/by-slug/${encodeURIComponent(slug)}`)
       .then((res) => setNews(res.data))
-      .catch((err) => setError(err?.response?.data || err.message))
+      .catch((err) => setError(err?.response?.data?.detail || err.message))
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -59,21 +59,30 @@ const NewsDetail = () => {
       return;
     }
 
-    // Fetch translation for the target language
+    // Fetch translation for the target language. Translation is async on the
+    // backend (Dramatiq actor), so a 202 with a task_id can come back; treat
+    // anything other than a populated translation payload as a soft failure.
+    if (!news?.id) {
+      toast.error('Невозможно перевести: статья не загружена');
+      return;
+    }
     setTranslating(true);
     try {
-      const res = await axios.get(`/api/news/${slug}/translate/`, { params: { target: next } });
-      setTranslations((prev) => ({
-        ...prev,
-        [next]: {
-          title: res.data.translated_title,
-          content: res.data.translated_content,
-        },
-      }));
-      setCurrentLang(next);
+      const res = await api.post(`cms/v1/news/${news.id}/translate`, { target: next });
+      const translated_title = (res.data as any)?.translated_title;
+      const translated_content = (res.data as any)?.translated_content;
+      if (translated_title && translated_content) {
+        setTranslations((prev) => ({
+          ...prev,
+          [next]: { title: translated_title, content: translated_content },
+        }));
+        setCurrentLang(next);
+      } else {
+        toast('Перевод поставлен в очередь — попробуйте через минуту');
+      }
     } catch (err: any) {
       console.error('Translation failed', err);
-      toast.error(err?.response?.data?.error || 'Ошибка перевода. Попробуйте позже.');
+      toast.error(err?.response?.data?.detail || 'Ошибка перевода. Попробуйте позже.');
     } finally {
       setTranslating(false);
     }
