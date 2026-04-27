@@ -42,15 +42,22 @@ const HRProfiles = () => {
 
   const { data: profiles, isLoading, error } = useQuery({
     queryKey: ['hr-profiles'],
-    queryFn: async () => {
-      const res = await api.get('users/v1/profile/');
-      return res.data as UserProfile[];
+    queryFn: async (): Promise<UserProfile[]> => {
+      // The HR "profiles" view lists every user — backed by the admin
+      // user endpoint. `users/v1/profile/` returns ONLY the current user
+      // (single object), which is why this page used to crash with
+      // `(profiles || []).filter is not a function`.
+      const res = await api.get('users/v1/admin/users/');
+      const data = res.data as unknown;
+      if (Array.isArray(data)) return data as UserProfile[];
+      if (data && Array.isArray((data as any).items)) return (data as any).items;
+      return [];
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const res = await api.patch(`users/v1/profile/${id}/`, data);
+      const res = await api.patch(`users/v1/admin/users/${id}/`, data);
       return res.data;
     },
     onSuccess: () => {
